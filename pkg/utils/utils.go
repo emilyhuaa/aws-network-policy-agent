@@ -3,13 +3,18 @@ package utils
 import (
 	"crypto/sha1"
 	"encoding/binary"
+	"encoding/gob"
 	"encoding/hex"
 	"fmt"
 	"net"
+	"os"
 	"strings"
+	"sync"
+	"time"
 	"unsafe"
 
 	"github.com/aws/aws-network-policy-agent/api/v1alpha1"
+	"github.com/emilyhuaa/policyLogsEnhancement/pkg"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -57,6 +62,36 @@ func GetProtocol(protocolNum int) string {
 }
 
 type VerdictType int
+
+var LocalCache map[string][]pkg.PodInfo
+var LocalCacheMutex sync.Mutex
+
+func init() {
+	LocalCache = make(map[string][]pkg.PodInfo)
+	go syncMetadataCache()
+}
+
+func syncMetadataCache() {
+	for range time.Tick(30 * time.Second) {
+		err := readCacheFromFile()
+		if err != nil {
+			fmt.Println("Error reading cache from file:", err)
+		}
+	}
+}
+
+func readCacheFromFile() error {
+	file, err := os.Open("podInfoCache.gob")
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	decoder := gob.NewDecoder(file)
+	LocalCacheMutex.Lock()
+	defer LocalCacheMutex.Unlock()
+	return decoder.Decode(&LocalCache)
+}
 
 const (
 	DENY VerdictType = iota

@@ -20,7 +20,9 @@ import (
 	"github.com/aws/aws-network-policy-agent/controllers"
 	"github.com/aws/aws-network-policy-agent/pkg/utils"
 
-	"github.com/aws/amazon-vpc-cni-k8s/rpc"
+	"github.com/emilyhuaa/policyLogsEnhancement/pkg/rpc"
+
+	cnirpc "github.com/aws/amazon-vpc-cni-k8s/rpc"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -40,6 +42,7 @@ const (
 type server struct {
 	policyReconciler *controllers.PolicyEndpointsReconciler
 	log              logr.Logger
+	podInfoCache     map[string]*rpc.PodInfo
 }
 
 // EnforceNpToPod processes CNI Enforce NP network request
@@ -81,10 +84,28 @@ func (s *server) EnforceNpToPod(ctx context.Context, in *rpc.EnforceNpRequest) (
 		s.log.Info("Pod either has no active policies or shares the eBPF firewall maps with other local pods. No Map update required..")
 	}
 
-	resp := rpc.EnforceNpReply{
+	resp := cnirpc.EnforceNpReply{
 		Success: err == nil,
 	}
 	return &resp, nil
+}
+
+// GetPodInfoCache retrieves the podInfoCache.
+func (s *server) GetPodInfoCache(ctx context.Context, req *rpc.GetCacheRequest) (*rpc.GetCacheReply, error) {
+	entries := make([]*rpc.PodInfoCacheEntry, 0, len(s.podInfoCache))
+	for ip, podInfo := range s.podInfoCache {
+		entry := &rpc.PodInfoCacheEntry{
+			Ip:      ip,
+			PodInfo: podInfo,
+		}
+		entries = append(entries, entry)
+	}
+
+	reply := &rpc.GetCacheReply{
+		Entries: entries,
+	}
+
+	return reply, nil
 }
 
 // RunRPCHandler handles request from gRPC

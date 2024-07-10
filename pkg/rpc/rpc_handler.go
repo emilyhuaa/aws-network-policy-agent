@@ -46,7 +46,7 @@ type server struct {
 }
 
 // EnforceNpToPod processes CNI Enforce NP network request
-func (s *server) EnforceNpToPod(ctx context.Context, in *rpc.EnforceNpRequest) (*rpc.EnforceNpReply, error) {
+func (s *server) EnforceNpToPod(ctx context.Context, in *cnirpc.EnforceNpRequest) (*cnirpc.EnforceNpReply, error) {
 	s.log.Info("Received Enforce Network Policy Request for Pod", "Name", in.K8S_POD_NAME, "Namespace", in.K8S_POD_NAMESPACE)
 	var err error
 
@@ -119,7 +119,7 @@ func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler) erro
 		return errors.Wrap(err, "network policy agent: failed to listen to gRPC port")
 	}
 	grpcServer := grpc.NewServer()
-	rpc.RegisterNPBackendServer(grpcServer, &server{policyReconciler: policyReconciler, log: rpcLog})
+	cnirpc.RegisterNPBackendServer(grpcServer, &server{policyReconciler: policyReconciler, log: rpcLog})
 	healthServer := health.NewServer()
 	// No need to ever change this to HealthCheckResponse_NOT_SERVING since it's a local service only
 	healthServer.SetServingStatus(grpcHealthServiceName, healthpb.HealthCheckResponse_SERVING)

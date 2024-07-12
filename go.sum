@@ -15,10 +15,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/emicklei/go-restful/v3 v3.11.0 h1:rAQeMHw1c7zTmncogyy8VvRZwtkmkZ4FxERmMY4rD+g=
 github.com/emicklei/go-restful/v3 v3.11.0/go.mod h1:6n3XBCmQQb25CM2LCACGz8ukIrRry+4bhvbpWn3mrbc=
-github.com/emilyhuaa/policyLogsEnhancement v1.0.0 h1:zJCiKOFyso3nPa6olqkXovPt7aQGe1wVmswrkkPmz8E=
-github.com/emilyhuaa/policyLogsEnhancement v1.0.0/go.mod h1:zDdvwx7aOkaS47Jsks+2dpvHbForO04zNnRwsRxYFbw=
-github.com/emilyhuaa/policyLogsEnhancement v1.1.0 h1:DjNY64rXFt3W4X6JJXIMKr0YL3w8vefR/2+8B+qPlA8=
-github.com/emilyhuaa/policyLogsEnhancement v1.1.0/go.mod h1:zDdvwx7aOkaS47Jsks+2dpvHbForO04zNnRwsRxYFbw=
+github.com/emilyhuaa/policyLogsEnhancement v1.2.0 h1:u5ti1+RxhWlvnKSxUQP3Dsi5JuX0ZsQ6xu89p8n4Lp8=
+github.com/emilyhuaa/policyLogsEnhancement v1.2.0/go.mod h1:7R8Ufbce6sDQWvUQoQb/sY1Ysj7tyl+IGyKfPhaqbOs=
 github.com/evanphx/json-patch v5.7.0+incompatible h1:vgGkfT/9f8zE6tvSCe74nfpAVDQ2tG6yudJd8LBksgI=
 github.com/evanphx/json-patch v5.7.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch/v5 v5.8.0 h1:lRj6N9Nci7MvzrXuX6HFzU8XjmhPiXPlsKEy1u0KQro=

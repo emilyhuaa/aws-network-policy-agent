@@ -1,5 +1,5 @@
 # Build the manager binary
-ARG golang_image
+ARG golang_image=golang:1.22.4
 
 FROM $golang_image as builder
 

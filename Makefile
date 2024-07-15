@@ -216,8 +216,6 @@ multi-arch-build-and-push: setup-ebpf-sdk-override ## Build and push docker imag
 		--cache-to=type=gha,mode=max \
 		-t $(IMAGE):$(VERSION) \
 		--build-arg golang_image="$(GOLANG_IMAGE)" \
-		--build-arg GIT_USER=$(GIT_USER) \
-        --build-arg GIT_PAT=$(GIT_PAT) \
 		--push \
 		.
 

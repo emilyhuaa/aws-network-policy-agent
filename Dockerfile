@@ -18,6 +18,7 @@ COPY go.mod go.sum ./
 # and so that source changes don't invalidate our downloaded layer
 RUN go mod download
 
+
 COPY . ./
 
 RUN make build-linux

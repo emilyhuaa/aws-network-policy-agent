@@ -5,6 +5,8 @@ FROM $golang_image as builder
 
 ARG TARGETOS
 ARG TARGETARCH
+ARG GIT_USER
+ARG GIT_PAT
 
 # Env configuration
 ENV GOPROXY=direct

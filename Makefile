@@ -9,8 +9,6 @@ GOLANG_IMAGE ?= public.ecr.aws/eks-distro-build-tooling/golang:$(GOLANG_VERSION)
 TEST_IMAGE = aws-network-policy-agent-test
 TEST_IMAGE_NAME = $(TEST_IMAGE)$(IMAGE_ARCH_SUFFIX):$(VERSION)
 MAKEFILE_PATH = $(dir $(realpath -s $(firstword $(MAKEFILE_LIST))))
-GIT_USER ?= emilyhuaa
-GIT_PAT ?= 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
 
 export GOPROXY = direct
 export GOSUMDB = sum.golang.org

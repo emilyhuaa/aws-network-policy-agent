@@ -171,36 +171,27 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 					log.Info("Failed to read from Ring buf", err)
 					continue
 				}
+				sip := utils.ConvByteToIPv6(rb.SourceIP).String()
+				sn, sns := utils.GetPodMetadata(sip)
+
+				if sn == "" && sns == "" {
+					log.Info("No current pod information found for Src IP: %s\n", sip)
+					continue
+				}
 
 				protocol := utils.GetProtocol(int(rb.Protocol))
 				verdict := getVerdict(int(rb.Verdict))
 
-				utils.LocalCacheMutex.Lock()
-				defer utils.LocalCacheMutex.Unlock()
-
-				sip := utils.ConvByteToIPv6(rb.SourceIP).String()
-				sMetadataList, sok := utils.LocalCache[sip]
-				if !sok {
-					fmt.Printf("No current pod information found for Src IP: %s\n", sip)
-					return
-				}
-				sn := sMetadataList[0].Name
-				sns := sMetadataList[0].Namespace
-
 				dip := utils.ConvByteToIPv6(rb.DestIP).String()
-				dMetadataList, dok := utils.LocalCache[dip]
-				if !dok {
-					// fmt.Printf("No current pod information found for Dest IP: %s\n", dip)
-					// return
+				dn, dns := utils.GetPodMetadata(dip)
+
+				if dn == "" && dns == "" {
 					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
 						"External Srv IP", dip, "Dest Port", rb.DestPort, "Proto", protocol, "Verdict", verdict)
 
 					message = "Node: " + nodeName + ";" + "SIP: " + sip + ";" + "SN" + sn + ";" + "SNS" + sns + ";" + "SPORT: " + strconv.Itoa(int(rb.SourcePort)) + ";" +
 						"EXTSRVIP: " + dip + ";" + "DPORT: " + strconv.Itoa(int(rb.DestPort)) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
 				} else {
-					dn := dMetadataList[0].Name
-					dns := dMetadataList[0].Namespace
-
 					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
 						"Dest IP", dip, "Dest Name", dn, "Dest Namespace", sns, "Dest Port", rb.DestPort,
 						"Proto", protocol, "Verdict", verdict)
@@ -217,35 +208,26 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 					continue
 				}
 
+				sip := utils.ConvByteArrayToIP(rb.SourceIP)
+				sn, sns := utils.GetPodMetadata(sip)
+
+				if sn == "" && sns == "" {
+					log.Info("No current pod information found for Src IP: %s\n", sip)
+					continue
+				}
+
 				protocol := utils.GetProtocol(int(rb.Protocol))
 				verdict := getVerdict(int(rb.Verdict))
 
-				utils.LocalCacheMutex.Lock()
-				defer utils.LocalCacheMutex.Unlock()
-
-				sip := utils.ConvByteArrayToIP(rb.SourceIP)
-				sMetadataList, sok := utils.LocalCache[sip]
-				if !sok {
-					fmt.Printf("No current pod information found for Src IP: %s\n", sip)
-					return
-				}
-				sn := sMetadataList[0].Name
-				sns := sMetadataList[0].Namespace
-
 				dip := utils.ConvByteArrayToIP(rb.DestIP)
-				dMetadataList, dok := utils.LocalCache[dip]
-				if !dok {
-					// fmt.Printf("No current pod information found for Dest IP: %s\n", dip)
-					// return
+				dn, dns := utils.GetPodMetadata(dip)
+				if dn == "" && dns == "" {
 					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
 						"External Srv IP", dip, "Dest Port", rb.DestPort, "Proto", protocol, "Verdict", verdict)
 
 					message = "Node: " + nodeName + ";" + "SIP: " + sip + ";" + "SN" + sn + ";" + "SNS" + sns + ";" + "SPORT: " + strconv.Itoa(int(rb.SourcePort)) + ";" +
 						"EXTSRVIP: " + dip + ";" + "DPORT: " + strconv.Itoa(int(rb.DestPort)) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
 				} else {
-					dn := dMetadataList[0].Name
-					dns := dMetadataList[0].Namespace
-
 					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
 						"Dest IP", dip, "Dest Name", dn, "Dest Namespace", sns, "Dest Port", rb.DestPort,
 						"Proto", protocol, "Verdict", verdict)

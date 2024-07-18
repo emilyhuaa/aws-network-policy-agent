@@ -21,12 +21,13 @@ import (
 	"github.com/aws/aws-network-policy-agent/controllers"
 	"github.com/aws/aws-network-policy-agent/pkg/utils"
 
-	"github.com/emilyhuaa/policyLogsEnhancement/pkg/rpc"
+	pb "github.com/emilyhuaa/policyLogsEnhancement/pkg/rpc"
 
-	cnirpc "github.com/aws/amazon-vpc-cni-k8s/rpc"
+	rpc "github.com/aws/amazon-vpc-cni-k8s/rpc"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
@@ -37,18 +38,18 @@ import (
 const (
 	npgRPCaddress         = "127.0.0.1:50052"
 	grpcHealthServiceName = "grpc.health.v1.np-agent"
-	syncInterval          = 30 * time.Second
+	cacheAddress          = "metadata-cache-service:50051"
 )
 
 // server controls RPC service responses.
 type server struct {
 	policyReconciler *controllers.PolicyEndpointsReconciler
 	log              logr.Logger
-	metadataCache    map[string]*rpc.Metadata
+	cacheClient      pb.CacheServiceClient
 }
 
 // EnforceNpToPod processes CNI Enforce NP network request
-func (s *server) EnforceNpToPod(ctx context.Context, in *cnirpc.EnforceNpRequest) (*cnirpc.EnforceNpReply, error) {
+func (s *server) EnforceNpToPod(ctx context.Context, in *rpc.EnforceNpRequest) (*rpc.EnforceNpReply, error) {
 	s.log.Info("Received Enforce Network Policy Request for Pod", "Name", in.K8S_POD_NAME, "Namespace", in.K8S_POD_NAMESPACE)
 	var err error
 
@@ -86,31 +87,45 @@ func (s *server) EnforceNpToPod(ctx context.Context, in *cnirpc.EnforceNpRequest
 		s.log.Info("Pod either has no active policies or shares the eBPF firewall maps with other local pods. No Map update required..")
 	}
 
-	resp := cnirpc.EnforceNpReply{
+	resp := rpc.EnforceNpReply{
 		Success: err == nil,
 	}
 	return &resp, nil
 }
 
-// GetMetadaCache retrieves the MetadataCache.
-func (s *server) GetMetadataCache(ctx context.Context, req *rpc.GetCacheRequest) (*rpc.GetCacheReply, error) {
-	entries := make([]*rpc.MetadataCacheEntry, 0, len(s.metadataCache))
-	for ip, metadata := range s.metadataCache {
-		entry := &rpc.MetadataCacheEntry{
-			Ip:       ip,
-			Metadata: metadata,
-		}
-		entries = append(entries, entry)
+func newCacheClient(address string) (pb.CacheServiceClient, error) {
+	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
 	}
-
-	reply := &rpc.GetCacheReply{
-		Entries: entries,
-	}
-
-	return reply, nil
+	return pb.NewCacheServiceClient(conn), nil
 }
 
-// RunRPCHandler handles requests from gRPC
+func (s *server) syncLocalCache() {
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+
+		req := &pb.CacheRequest{}
+		res, err := s.cacheClient.GetCache(ctx, req)
+		if err != nil {
+			s.log.Error(err, "Failed to sync local cache with metadata cache")
+			time.Sleep(30 * time.Second)
+			continue
+		}
+		newCache := make(map[string]utils.Metadata)
+		for _, ipMetadata := range res.Data {
+			newCache[ipMetadata.Ip] = utils.Metadata{Name: ipMetadata.Metadata.Name, Namespace: ipMetadata.Metadata.Namespace}
+		}
+		utils.UpdateLocalCache(newCache)
+		s.log.Info("Successfully synced local cache with metadata cache", "cache", newCache)
+
+		time.Sleep(30 * time.Second)
+
+	}
+}
+
+// RunRPCHandler handles request from gRPC
 func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler) error {
 	rpcLog := ctrl.Log.WithName("rpc-handler")
 
@@ -121,54 +136,30 @@ func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler) erro
 		return errors.Wrap(err, "network policy agent: failed to listen to gRPC port")
 	}
 	grpcServer := grpc.NewServer()
+	cacheClient, err := newCacheClient(cacheAddress)
+	if err != nil {
+		rpcLog.Error(err, "Failed to connect to metadata cache service")
+		return errors.Wrap(err, "network policy agent: failed to connect to metadata cache service")
+	}
+
 	s := &server{
 		policyReconciler: policyReconciler,
 		log:              rpcLog,
-		metadataCache:    make(map[string]*rpc.Metadata),
+		cacheClient:      cacheClient,
 	}
-	cnirpc.RegisterNPBackendServer(grpcServer, &server{policyReconciler: policyReconciler, log: rpcLog})
+
+	rpc.RegisterNPBackendServer(grpcServer, s)
 	healthServer := health.NewServer()
+	// No need to ever change this to HealthCheckResponse_NOT_SERVING since it's a local service only
 	healthServer.SetServingStatus(grpcHealthServiceName, healthpb.HealthCheckResponse_SERVING)
 	healthpb.RegisterHealthServer(grpcServer, healthServer)
 
+	// Register reflection service on gRPC server.
 	reflection.Register(grpcServer)
-
-	// Start a goroutine to periodically sync the cache
-	go syncCacheLoop(grpcServer, s)
-
 	if err := grpcServer.Serve(listener); err != nil {
 		rpcLog.Error(err, "Failed to start server on gRPC port: %v", err)
 		return errors.Wrap(err, "network policy agent: failed to start server on gPRC port")
 	}
 	rpcLog.Info("Done with RPC Handler initialization")
 	return nil
-}
-
-func syncCacheLoop(server *grpc.Server, s *server) {
-	ticker := time.NewTicker(syncInterval)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		UpdateLocalCache(server, s)
-	}
-}
-
-// UpdateLocalCache updates the local cache with the entries from the server-side cache.
-func UpdateLocalCache(server *grpc.Server, s *server) {
-	entries, err := s.GetMetadataCache(context.Background(), &rpc.GetCacheRequest{})
-	if err != nil {
-		ctrl.Log.Error(err, "Failed to get metadata cache from server")
-		return
-	}
-
-	utils.LocalCacheMutex.Lock()
-	defer utils.LocalCacheMutex.Unlock()
-	utils.LocalCache = make(map[string][]utils.Metadata)
-	for _, entry := range entries.Entries {
-		metadata := utils.Metadata{
-			Name:      entry.Metadata.Name,
-			Namespace: entry.Metadata.Namespace,
-		}
-		utils.LocalCache[entry.Ip] = append(utils.LocalCache[entry.Ip], metadata)
-	}
 }

@@ -37,7 +37,8 @@ var (
 	ErrFileExists                        = "file exists"
 	ErrInvalidFilterList                 = "failed to get filter list"
 	ErrMissingFilter                     = "no active filter to detach"
-	LocalCache                           = make(map[string][]Metadata)
+	LocalCache                           = make(map[string]Metadata)
+	LocalCacheMutex      sync.Mutex
 )
 
 type Metadata struct {
@@ -45,7 +46,28 @@ type Metadata struct {
 	Namespace string
 }
 
-var LocalCacheMutex sync.Mutex
+func UpdateLocalCache(newCache map[string]Metadata) {
+	LocalCacheMutex.Lock()
+	defer LocalCacheMutex.Unlock()
+	for ip := range LocalCache {
+		if _, found := newCache[ip]; !found {
+			delete(LocalCache, ip)
+		}
+	}
+
+	for ip, metadata := range newCache {
+		LocalCache[ip] = metadata
+	}
+}
+
+func GetPodMetadata(ip string) (string, string) {
+	LocalCacheMutex.Lock()
+	defer LocalCacheMutex.Unlock()
+	if metadata, exists := LocalCache[ip]; exists {
+		return metadata.Name, metadata.Namespace
+	}
+	return "", ""
+}
 
 func GetProtocol(protocolNum int) string {
 	protocolStr := "UNKNOWN"

@@ -149,7 +149,7 @@ func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler) erro
 		cacheClient:      cacheClient,
 	}
 
-	s.syncLocalCache()
+	go s.syncLocalCache()
 
 	rpc.RegisterNPBackendServer(grpcServer, s)
 	healthServer := health.NewServer()

@@ -38,7 +38,7 @@ import (
 const (
 	npgRPCaddress         = "127.0.0.1:50052"
 	grpcHealthServiceName = "grpc.health.v1.np-agent"
-	cacheAddress          = "metadata-cache-service:50051"
+	cacheAddress          = "10.100.51.51:50051"
 )
 
 // server controls RPC service responses.
@@ -104,15 +104,17 @@ func newCacheClient(address string) (pb.CacheServiceClient, error) {
 func (s *server) syncLocalCache() {
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-		defer cancel()
 
 		req := &pb.CacheRequest{}
 		res, err := s.cacheClient.GetCache(ctx, req)
+		cancel()
+
 		if err != nil {
 			s.log.Error(err, "Failed to sync local cache with metadata cache")
 			time.Sleep(30 * time.Second)
 			continue
 		}
+
 		newCache := make(map[string]utils.Metadata)
 		for _, ipMetadata := range res.Data {
 			newCache[ipMetadata.Ip] = utils.Metadata{Name: ipMetadata.Metadata.Name, Namespace: ipMetadata.Metadata.Namespace}
@@ -121,7 +123,6 @@ func (s *server) syncLocalCache() {
 		s.log.Info("Successfully synced local cache with metadata cache", "cache", newCache)
 
 		time.Sleep(30 * time.Second)
-
 	}
 }
 
@@ -147,6 +148,8 @@ func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler) erro
 		log:              rpcLog,
 		cacheClient:      cacheClient,
 	}
+
+	s.syncLocalCache()
 
 	rpc.RegisterNPBackendServer(grpcServer, s)
 	healthServer := health.NewServer()

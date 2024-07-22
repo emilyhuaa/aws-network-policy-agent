@@ -120,7 +120,7 @@ func (s *server) syncLocalCache() {
 			newCache[ipMetadata.Ip] = utils.Metadata{Name: ipMetadata.Metadata.Name, Namespace: ipMetadata.Metadata.Namespace}
 		}
 		utils.UpdateLocalCache(newCache)
-		s.log.Info("Successfully synced local cache with metadata cache", "cache", newCache)
+		s.log.Info("Successfully synced local cache with metadata cache", "local cache", utils.LocalCache)
 
 		time.Sleep(30 * time.Second)
 	}

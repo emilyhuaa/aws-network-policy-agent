@@ -18,8 +18,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/aws/aws-network-policy-agent/controllers"
-	"github.com/aws/aws-network-policy-agent/pkg/utils"
+	"github.com/emilyhuaa/aws-network-policy-agent/controllers"
+	"github.com/emilyhuaa/aws-network-policy-agent/pkg/utils"
 
 	pb "github.com/emilyhuaa/policyLogsEnhancement/pkg/rpc"
 

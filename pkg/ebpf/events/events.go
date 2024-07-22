@@ -53,7 +53,7 @@ func ConfigurePolicyEventsLogging(logger logr.Logger, enableCloudWatchLogs bool,
 	// Enable logging and setup ring buffer
 	if mapFD <= 0 {
 		logger.Info("MapFD is invalid")
-		return fmt.Errorf("Invalid Ringbuffer FD: %d", mapFD)
+		return fmt.Errorf("invalid Ringbuffer FD: %d", mapFD)
 	}
 
 	var mapFDList []int
@@ -176,7 +176,7 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 				sn, sns := utils.GetPodMetadata(sip)
 
 				if sn == "" && sns == "" {
-					log.Info("Failed to get pod metadata for source IP", sip)
+					log.Info("Failed to get pod metadata for source IP", "ip: ", sip)
 				}
 
 				dip := utils.ConvByteToIPv6(rb.DestIP).String()
@@ -186,14 +186,12 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 				verdict := getVerdict(int(rb.Verdict))
 
 				if dn == "" && dns == "" {
-					log.Info("External Srv IP: ", dip)
 					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
 						"External Srv IP", dip, "Dest Port", rb.DestPort, "Proto", protocol, "Verdict", verdict)
 
 					message = "Node: " + nodeName + ";" + "SIP: " + sip + ";" + "SN" + sn + ";" + "SNS" + sns + ";" + "SPORT: " + strconv.Itoa(int(rb.SourcePort)) + ";" +
 						"EXTSRVIP: " + dip + ";" + "DPORT: " + strconv.Itoa(int(rb.DestPort)) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
 				} else {
-					log.Info("Dest Pod Name: ", dn, "Dest Pod Namespace", dns)
 					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
 						"Dest IP", dip, "Dest Name", dn, "Dest Namespace", sns, "Dest Port", rb.DestPort,
 						"Proto", protocol, "Verdict", verdict)
@@ -212,7 +210,7 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 				sn, sns := utils.GetPodMetadata(sip)
 
 				if sn == "" && sns == "" {
-					log.Info("Failed to get pod metadata for source IP", sip)
+					log.Info("Failed to get pod metadata for source IP", "ip: ", sip)
 				}
 
 				dip := utils.ConvByteArrayToIP(rb.DestIP)
@@ -222,14 +220,12 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 				verdict := getVerdict(int(rb.Verdict))
 
 				if dn == "" && dns == "" {
-					log.Info("External Srv IP: ", dip)
 					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
 						"External Srv IP", dip, "Dest Port", rb.DestPort, "Proto", protocol, "Verdict", verdict)
 
 					message = "Node: " + nodeName + ";" + "SIP: " + sip + ";" + "SN" + sn + ";" + "SNS" + sns + ";" + "SPORT: " + strconv.Itoa(int(rb.SourcePort)) + ";" +
 						"EXTSRVIP: " + dip + ";" + "DPORT: " + strconv.Itoa(int(rb.DestPort)) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
 				} else {
-					log.Info("Dest Pod Name: ", dn, "Dest Pod Namespace", dns)
 					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
 						"Dest IP", dip, "Dest Name", dn, "Dest Namespace", sns, "Dest Port", rb.DestPort,
 						"Proto", protocol, "Verdict", verdict)

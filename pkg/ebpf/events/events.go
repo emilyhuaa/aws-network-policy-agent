@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/aws/aws-network-policy-agent/pkg/aws"
@@ -174,6 +173,7 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 
 				sip := utils.ConvByteToIPv6(rb.SourceIP).String()
 				sn, sns := utils.GetPodMetadata(sip)
+				sport := int(rb.SourcePort)
 
 				if sn == "" && sns == "" {
 					log.Info("Failed to get pod metadata for source IP", "ip: ", sip)
@@ -181,25 +181,13 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 
 				dip := utils.ConvByteToIPv6(rb.DestIP).String()
 				dn, dns := utils.GetPodMetadata(dip)
+				dport := int(rb.DestPort)
 
 				protocol := utils.GetProtocol(int(rb.Protocol))
 				verdict := getVerdict(int(rb.Verdict))
 
-				if dn == "" && dns == "" {
-					log.Info("External Dest Srv IP", "ip: ", dip)
-					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
-						"External Srv IP", dip, "Dest Port", rb.DestPort, "Proto", protocol, "Verdict", verdict)
+				utils.logFlowInfo(log, &message, nodeName, sip, sn, sns, sport, dip, dn, dns, dport, protocol, verdict)
 
-					message = "Node: " + nodeName + ";" + "SIP: " + sip + ";" + "SN" + sn + ";" + "SNS" + sns + ";" + "SPORT: " + strconv.Itoa(int(rb.SourcePort)) + ";" +
-						"EXTSRVIP: " + dip + ";" + "DPORT: " + strconv.Itoa(int(rb.DestPort)) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
-				} else {
-					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
-						"Dest IP", dip, "Dest Name", dn, "Dest Namespace", dns, "Dest Port", rb.DestPort,
-						"Proto", protocol, "Verdict", verdict)
-
-					message = "Node: " + nodeName + ";" + "SIP: " + sip + ";" + "SN" + sn + ";" + "SNS" + sns + ";" + "SPORT: " + strconv.Itoa(int(rb.SourcePort)) + ";" +
-						"DIP: " + dip + ";" + "DN" + dn + ";" + "DNS" + dns + ";" + "DPORT: " + strconv.Itoa(int(rb.DestPort)) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
-				}
 			} else {
 				var rb ringBufferDataV4_t
 				buf := bytes.NewBuffer(record)
@@ -209,6 +197,7 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 				}
 				sip := utils.ConvByteArrayToIP(rb.SourceIP)
 				sn, sns := utils.GetPodMetadata(sip)
+				sport := int(rb.SourcePort)
 
 				if sn == "" && sns == "" {
 					log.Info("Failed to get pod metadata for source IP", "ip: ", sip)
@@ -216,25 +205,12 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 
 				dip := utils.ConvByteArrayToIP(rb.DestIP)
 				dn, dns := utils.GetPodMetadata(dip)
+				dport := int(rb.DestPort)
 
 				protocol := utils.GetProtocol(int(rb.Protocol))
 				verdict := getVerdict(int(rb.Verdict))
 
-				if dn == "" && dns == "" {
-					log.Info("External Dest Srv IP", "ip: ", dip)
-					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
-						"External Srv IP", dip, "Dest Port", rb.DestPort, "Proto", protocol, "Verdict", verdict)
-
-					message = "Node: " + nodeName + ";" + "SIP: " + sip + ";" + "SN" + sn + ";" + "SNS" + sns + ";" + "SPORT: " + strconv.Itoa(int(rb.SourcePort)) + ";" +
-						"EXTSRVIP: " + dip + ";" + "DPORT: " + strconv.Itoa(int(rb.DestPort)) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
-				} else {
-					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
-						"Dest IP", dip, "Dest Name", dn, "Dest Namespace", dns, "Dest Port", rb.DestPort,
-						"Proto", protocol, "Verdict", verdict)
-
-					message = "Node: " + nodeName + ";" + "SIP: " + sip + ";" + "SN" + sn + ";" + "SNS" + sns + ";" + "SPORT: " + strconv.Itoa(int(rb.SourcePort)) + ";" +
-						"DIP: " + dip + ";" + "DN" + dn + ";" + "DNS" + dns + ";" + "DPORT: " + strconv.Itoa(int(rb.DestPort)) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
-				}
+				utils.logFlowInfo(log, &message, nodeName, sip, sn, sns, sport, dip, dn, dns, dport, protocol, verdict)
 			}
 
 			if enableCloudWatchLogs {

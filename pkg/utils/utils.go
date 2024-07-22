@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 	"unsafe"
@@ -67,6 +68,39 @@ func GetPodMetadata(ip string) (string, string) {
 		return metadata.Name, metadata.Namespace
 	}
 	return "", ""
+}
+
+func logFlowInfo(log logr.Logger, message *string, nodeName, sip, sn, sns string, sport int, dip, dn, dns string, dport int, protocol, verdict string) {
+	switch {
+	case sn == "hip" && dn == "hip": // if source IP is host IP and dest IP is host IP
+		log.Info("Flow Info:  ", "Src Host IP", sip, "Src Port", sport, "Dest Host IP", dip, "Dest Port", dport, "Proto", protocol, "Verdict", verdict)
+		*message = "Node: " + nodeName + ";" + "SHOSTIP: " + sip + ";" + "SPORT: " + strconv.Itoa(sport) + ";" +
+			"DHOSTIP: " + dip + ";" + "DPORT: " + strconv.Itoa(dport) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
+
+	case sn == "hip": // if source IP is host IP only
+		log.Info("Flow Info:  ", "Src Host IP", sip, "Src Port", sport,
+			"Dest IP", dip, "Dest Name", dn, "Dest Namespace", dns, "Dest Port", dport, "Proto", protocol, "Verdict", verdict)
+		*message = "Node: " + nodeName + ";" + "SHOSTIP: " + sip + ";" + "SPORT: " + strconv.Itoa(sport) + ";" +
+			"DIP: " + dip + ";" + "DN" + dn + ";" + "DNS" + dns + ";" + "DPORT: " + strconv.Itoa(dport) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
+
+	case dn == "hip": // if dest IP is host IP only
+		log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", sport,
+			"Dest Host IP", dip, "Dest Port", dport, "Proto", protocol, "Verdict", verdict)
+		*message = "Node: " + nodeName + ";" + "SIP: " + sip + ";" + "SN" + sn + ";" + "SNS" + sns + ";" + "SPORT: " + strconv.Itoa(sport) + ";" +
+			"DHOSTIP: " + dip + ";" + "DPORT: " + strconv.Itoa(dport) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
+
+	case dn == "" && dns == "": // if dest IP is external
+		log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", sport,
+			"Dest Ext Srv IP", dip, "Dest Port", dport, "Proto", protocol, "Verdict", verdict)
+		*message = "Node: " + nodeName + ";" + "SIP: " + sip + ";" + "SN" + sn + ";" + "SNS" + sns + ";" + "SPORT: " + strconv.Itoa(sport) + ";" +
+			"DEXTSRVIP: " + dip + ";" + "DPORT: " + strconv.Itoa(dport) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
+
+	default:
+		log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", sport,
+			"Dest IP", dip, "Dest Name", dn, "Dest Namespace", dns, "Dest Port", dport, "Proto", protocol, "Verdict", verdict)
+		*message = "Node: " + nodeName + ";" + "SIP: " + sip + ";" + "SN" + sn + ";" + "SNS" + sns + ";" + "SPORT: " + strconv.Itoa(sport) + ";" +
+			"DIP: " + dip + ";" + "DN" + dn + ";" + "DNS" + dns + ";" + "DPORT: " + strconv.Itoa(dport) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
+	}
 }
 
 func GetProtocol(protocolNum int) string {

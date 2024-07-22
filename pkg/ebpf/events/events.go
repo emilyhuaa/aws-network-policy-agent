@@ -176,17 +176,14 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 				sn, sns := utils.GetPodMetadata(sip)
 
 				if sn == "" && sns == "" {
-					log.Info("No current pod information found for Src IP: ", sip)
-					continue
-				} else {
-					log.Info("Src Pod Name: ", sn, "Src Pod Namespace", sns)
+					log.Info("Failed to get pod metadata for source IP", sip)
 				}
-
-				protocol := utils.GetProtocol(int(rb.Protocol))
-				verdict := getVerdict(int(rb.Verdict))
 
 				dip := utils.ConvByteToIPv6(rb.DestIP).String()
 				dn, dns := utils.GetPodMetadata(dip)
+
+				protocol := utils.GetProtocol(int(rb.Protocol))
+				verdict := getVerdict(int(rb.Verdict))
 
 				if dn == "" && dns == "" {
 					log.Info("External Srv IP: ", dip)
@@ -204,7 +201,6 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 					message = "Node: " + nodeName + ";" + "SIP: " + sip + ";" + "SN" + sn + ";" + "SNS" + sns + ";" + "SPORT: " + strconv.Itoa(int(rb.SourcePort)) + ";" +
 						"DIP: " + dip + ";" + "DN" + dn + ";" + "DNS" + dns + ";" + "DPORT: " + strconv.Itoa(int(rb.DestPort)) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
 				}
-
 			} else {
 				var rb ringBufferDataV4_t
 				buf := bytes.NewBuffer(record)
@@ -212,22 +208,19 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 					log.Info("Failed to read from Ring buf", err)
 					continue
 				}
-
 				sip := utils.ConvByteArrayToIP(rb.SourceIP)
 				sn, sns := utils.GetPodMetadata(sip)
 
 				if sn == "" && sns == "" {
-					log.Info("No current pod information found for Src IP: %s\n", sip)
-					continue
-				} else {
-					log.Info("Src Pod Name: ", sn, "Src Pod Namespace", sns)
+					log.Info("Failed to get pod metadata for source IP", sip)
 				}
+
+				dip := utils.ConvByteArrayToIP(rb.DestIP)
+				dn, dns := utils.GetPodMetadata(dip)
 
 				protocol := utils.GetProtocol(int(rb.Protocol))
 				verdict := getVerdict(int(rb.Verdict))
 
-				dip := utils.ConvByteArrayToIP(rb.DestIP)
-				dn, dns := utils.GetPodMetadata(dip)
 				if dn == "" && dns == "" {
 					log.Info("External Srv IP: ", dip)
 					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,

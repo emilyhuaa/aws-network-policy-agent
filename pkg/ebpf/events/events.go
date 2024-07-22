@@ -186,6 +186,7 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 				verdict := getVerdict(int(rb.Verdict))
 
 				if dn == "" && dns == "" {
+					log.Info("External Dest Srv IP", "ip: ", dip)
 					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
 						"External Srv IP", dip, "Dest Port", rb.DestPort, "Proto", protocol, "Verdict", verdict)
 
@@ -193,7 +194,7 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 						"EXTSRVIP: " + dip + ";" + "DPORT: " + strconv.Itoa(int(rb.DestPort)) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
 				} else {
 					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
-						"Dest IP", dip, "Dest Name", dn, "Dest Namespace", sns, "Dest Port", rb.DestPort,
+						"Dest IP", dip, "Dest Name", dn, "Dest Namespace", dns, "Dest Port", rb.DestPort,
 						"Proto", protocol, "Verdict", verdict)
 
 					message = "Node: " + nodeName + ";" + "SIP: " + sip + ";" + "SN" + sn + ";" + "SNS" + sns + ";" + "SPORT: " + strconv.Itoa(int(rb.SourcePort)) + ";" +
@@ -220,6 +221,7 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 				verdict := getVerdict(int(rb.Verdict))
 
 				if dn == "" && dns == "" {
+					log.Info("External Dest Srv IP", "ip: ", dip)
 					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
 						"External Srv IP", dip, "Dest Port", rb.DestPort, "Proto", protocol, "Verdict", verdict)
 
@@ -227,7 +229,7 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 						"EXTSRVIP: " + dip + ";" + "DPORT: " + strconv.Itoa(int(rb.DestPort)) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
 				} else {
 					log.Info("Flow Info:  ", "Src IP", sip, "Src Name", sn, "Src Namespace", sns, "Src Port", rb.SourcePort,
-						"Dest IP", dip, "Dest Name", dn, "Dest Namespace", sns, "Dest Port", rb.DestPort,
+						"Dest IP", dip, "Dest Name", dn, "Dest Namespace", dns, "Dest Port", rb.DestPort,
 						"Proto", protocol, "Verdict", verdict)
 
 					message = "Node: " + nodeName + ";" + "SIP: " + sip + ";" + "SN" + sn + ";" + "SNS" + sns + ";" + "SPORT: " + strconv.Itoa(int(rb.SourcePort)) + ";" +

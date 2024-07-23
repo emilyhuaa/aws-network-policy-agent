@@ -3,22 +3,23 @@ package events
 // import (
 // 	"bytes"
 // 	"encoding/binary"
+// 	"strings"
 // 	"testing"
 // 	"time"
 
-// 	"github.com/aws/aws-network-policy-agent/pkg/utils"
-// 	"github.com/go-logr/funcr"
+// 	"github.com/emilyhuaa/aws-network-policy-agent/pkg/utils"
 // 	"github.com/go-logr/logr"
+// 	"github.com/go-logr/logr/funcr"
 // 	"github.com/stretchr/testify/assert"
 // )
 
 // type mockLogger struct {
 // 	logr.Logger
-// 	messager []string
+// 	logs []string
 // }
 
 // func (m *mockLogger) Info(msg string, keysAndValues ...interface{}) {
-// 	m.messager = append(m.messager, msg)
+// 	m.logs = append(m.logs, msg)
 // }
 
 // func TestCapturePolicyEvents(t *testing.T) {
@@ -37,18 +38,25 @@ package events
 // 			DestIP:     3232235777, //192.168.1.1,
 // 			DestPort:   80,
 // 			Protocol:   6,
-// 			Action:     1,
+// 			Verdict:    1,
 // 		}
 // 		buf := new(bytes.Buffer)
 // 		err := binary.Write(buf, binary.LittleEndian, data)
 // 		assert.NoError(t, err)
 
-// 		go CapturePolicyEvents(ringBufferChan, mockLogger)
+// 		go CapturePolicyEvents(ringBufferChan, mockLogger.Logger, false, false)
 // 		ringBufferChan <- buf.Bytes()
 
 // 		time.Sleep(1 * time.Second)
 
-// 		expectedMsg := "Flow Info: Src IP 192.168.0.1 Src Name pod1 Src Namespace default Src Port 1234 Dest IP 192.168.1.1 Dest Name pod2 Dest Namespace kube-system Dest Port 80 Proto TCP Verdict ACCEPT"
-// 		assert.Contains(t, mockLogger.messager, expectedMsg)
+// 		expectedLog := "Flow Info: Src IP 192.168.0.1 Src Name pod1 Src Namespace default Src Port 1234 Dest IP 192.168.1.1 Dest Name pod2 Dest Namespace kube-system Dest Port 80 Proto TCP Verdict ACCEPT"
+// 		logFound := false
+// 		for _, log := range mockLogger.logs {
+// 			if strings.Contains(log, expectedLog) {
+// 				logFound = true
+// 				break
+// 			}
+// 		}
+// 		assert.True(t, logFound, "Expected log not found")
 // 	})
 // }

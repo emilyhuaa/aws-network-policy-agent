@@ -93,14 +93,21 @@ func (s *server) EnforceNpToPod(ctx context.Context, in *rpc.EnforceNpRequest) (
 	return &resp, nil
 }
 
+// newCacheClient creates a new gRPC client for the CacheService.
+// It takes the address of the gRPC server as input and returns a CacheServiceClient and an error.
 func newCacheClient(address string) (pb.CacheServiceClient, error) {
-	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(
+		address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 	if err != nil {
 		return nil, err
 	}
 	return pb.NewCacheServiceClient(conn), nil
 }
 
+// syncLocalCache is a method of the server struct that continuously syncs the local cache
+// with the metadata cache using a gRPC client.
 func (s *server) syncLocalCache() {
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
@@ -110,6 +117,7 @@ func (s *server) syncLocalCache() {
 		cancel()
 
 		if err != nil {
+			// If there was an error fetching the cache data, log the error and sleep for 30 seconds before retrying.
 			s.log.Error(err, "Failed to sync local cache with metadata cache")
 			time.Sleep(30 * time.Second)
 			continue

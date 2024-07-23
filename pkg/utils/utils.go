@@ -70,7 +70,7 @@ func GetPodMetadata(ip string) (string, string) {
 	return "", ""
 }
 
-func logFlowInfo(log logr.Logger, message *string, nodeName, sip, sn, sns string, sport int, dip, dn, dns string, dport int, protocol, verdict string) {
+func LogFlowInfo(log logr.Logger, message *string, nodeName, sip, sn, sns string, sport int, dip, dn, dns string, dport int, protocol, verdict string) {
 	switch {
 	case sn == "hip" && dn == "hip": // if source IP is host IP and dest IP is host IP
 		log.Info("Flow Info:  ", "Src Host IP", sip, "Src Port", sport, "Dest Host IP", dip, "Dest Port", dport, "Proto", protocol, "Verdict", verdict)

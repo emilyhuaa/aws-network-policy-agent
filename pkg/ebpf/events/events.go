@@ -186,7 +186,7 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 				protocol := utils.GetProtocol(int(rb.Protocol))
 				verdict := getVerdict(int(rb.Verdict))
 
-				utils.logFlowInfo(log, &message, nodeName, sip, sn, sns, sport, dip, dn, dns, dport, protocol, verdict)
+				utils.LogFlowInfo(log, &message, nodeName, sip, sn, sns, sport, dip, dn, dns, dport, protocol, verdict)
 
 			} else {
 				var rb ringBufferDataV4_t
@@ -210,7 +210,7 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 				protocol := utils.GetProtocol(int(rb.Protocol))
 				verdict := getVerdict(int(rb.Verdict))
 
-				utils.logFlowInfo(log, &message, nodeName, sip, sn, sns, sport, dip, dn, dns, dport, protocol, verdict)
+				utils.LogFlowInfo(log, &message, nodeName, sip, sn, sns, sport, dip, dn, dns, dport, protocol, verdict)
 			}
 
 			if enableCloudWatchLogs {

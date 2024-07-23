@@ -171,18 +171,18 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 					continue
 				}
 
-				sip := utils.ConvByteToIPv6(rb.SourceIP).String()
-				sn, sns := utils.GetPodMetadata(sip)
-				sport := int(rb.SourcePort)
+				srcIP := utils.ConvByteToIPv6(rb.SourceIP).String()
+				srcN, srcNS := utils.GetPodMetadata(srcIP)
+				srcPort := int(rb.SourcePort)
 
-				dip := utils.ConvByteToIPv6(rb.DestIP).String()
-				dn, dns := utils.GetPodMetadata(dip)
-				dport := int(rb.DestPort)
+				destIP := utils.ConvByteToIPv6(rb.DestIP).String()
+				destN, destNS := utils.GetPodMetadata(destIP)
+				destPort := int(rb.DestPort)
 
 				protocol := utils.GetProtocol(int(rb.Protocol))
 				verdict := getVerdict(int(rb.Verdict))
 
-				utils.LogFlowInfo(log, &message, nodeName, sip, sn, sns, sport, dip, dn, dns, dport, protocol, verdict)
+				utils.LogFlowInfo(log, &message, nodeName, srcIP, srcN, srcNS, srcPort, destIP, destN, destNS, destPort, protocol, verdict)
 
 			} else {
 				var rb ringBufferDataV4_t
@@ -191,18 +191,18 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 					log.Info("Failed to read from Ring buf", err)
 					continue
 				}
-				sip := utils.ConvByteArrayToIP(rb.SourceIP)
-				sn, sns := utils.GetPodMetadata(sip)
-				sport := int(rb.SourcePort)
+				srcIP := utils.ConvByteArrayToIP(rb.SourceIP)
+				srcN, srcNS := utils.GetPodMetadata(srcIP)
+				srcPort := int(rb.SourcePort)
 
-				dip := utils.ConvByteArrayToIP(rb.DestIP)
-				dn, dns := utils.GetPodMetadata(dip)
-				dport := int(rb.DestPort)
+				destIP := utils.ConvByteArrayToIP(rb.DestIP)
+				destN, destNS := utils.GetPodMetadata(destIP)
+				destPort := int(rb.DestPort)
 
 				protocol := utils.GetProtocol(int(rb.Protocol))
 				verdict := getVerdict(int(rb.Verdict))
 
-				utils.LogFlowInfo(log, &message, nodeName, sip, sn, sns, sport, dip, dn, dns, dport, protocol, verdict)
+				utils.LogFlowInfo(log, &message, nodeName, srcIP, srcN, srcNS, srcPort, destIP, destN, destNS, destPort, protocol, verdict)
 			}
 
 			if enableCloudWatchLogs {

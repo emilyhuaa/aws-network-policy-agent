@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-ebpf-sdk-go v1.0.9
 	github.com/aws/aws-network-policy-agent v1.1.2
 	github.com/aws/aws-sdk-go v1.50.30
-	github.com/emilyhuaa/policyLogsEnhancement v1.7.2
+	github.com/emilyhuaa/policyLogsEnhancement v1.7.3
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
 	github.com/golang/mock v1.6.0

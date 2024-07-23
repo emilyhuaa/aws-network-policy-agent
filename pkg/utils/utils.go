@@ -72,6 +72,13 @@ func GetPodMetadata(ip string) (string, string) {
 
 func LogFlowInfo(log logr.Logger, message *string, nodeName, sip, sn, sns string, sport int, dip, dn, dns string, dport int, protocol, verdict string) {
 	switch {
+	case sn == "" && sns == "": // if no pod metadata for source IP
+		log.Info("Failed to get pod metadata for source IP", "ip: ", sip)
+		log.Info("Flow Info:  ", "Src IP", sip, "Src Port", sport,
+			"Dest IP", dip, "Dest Name", dn, "Dest Namespace", dns, "Dest Port", dport, "Proto", protocol, "Verdict", verdict)
+		*message = "Node: " + nodeName + ";" + "SHOSTIP: " + sip + ";" + "SPORT: " + strconv.Itoa(sport) + ";" +
+			"DIP: " + dip + ";" + "DN" + dn + ";" + "DNS" + dns + ";" + "DPORT: " + strconv.Itoa(dport) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
+
 	case sn == "hip" && dn == "hip": // if source IP is host IP and dest IP is host IP
 		log.Info("Flow Info:  ", "Src Host IP", sip, "Src Port", sport, "Dest Host IP", dip, "Dest Port", dport, "Proto", protocol, "Verdict", verdict)
 		*message = "Node: " + nodeName + ";" + "SHOSTIP: " + sip + ";" + "SPORT: " + strconv.Itoa(sport) + ";" +

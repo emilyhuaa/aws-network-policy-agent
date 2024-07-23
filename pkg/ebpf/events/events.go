@@ -175,10 +175,6 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 				sn, sns := utils.GetPodMetadata(sip)
 				sport := int(rb.SourcePort)
 
-				if sn == "" && sns == "" {
-					log.Info("Failed to get pod metadata for source IP", "ip: ", sip)
-				}
-
 				dip := utils.ConvByteToIPv6(rb.DestIP).String()
 				dn, dns := utils.GetPodMetadata(dip)
 				dport := int(rb.DestPort)
@@ -198,10 +194,6 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 				sip := utils.ConvByteArrayToIP(rb.SourceIP)
 				sn, sns := utils.GetPodMetadata(sip)
 				sport := int(rb.SourcePort)
-
-				if sn == "" && sns == "" {
-					log.Info("Failed to get pod metadata for source IP", "ip: ", sip)
-				}
 
 				dip := utils.ConvByteArrayToIP(rb.DestIP)
 				dn, dns := utils.GetPodMetadata(dip)

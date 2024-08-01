@@ -3,7 +3,7 @@
 IMAGE ?= 992382695827.dkr.ecr.us-west-2.amazonaws.com/emilyhua/aws-network-policy-agent
 VERSION ?= v1.8.0
 IMAGE_NAME = $(IMAGE)$(IMAGE_ARCH_SUFFIX):$(VERSION)
-GOLANG_VERSION ?= 1.22.4
+GOLANG_VERSION ?= $(shell cat .go-version)
 GOLANG_IMAGE ?= public.ecr.aws/eks-distro-build-tooling/golang:$(GOLANG_VERSION)-gcc-al2
 # TEST_IMAGE is the testing environment container image.
 TEST_IMAGE = aws-network-policy-agent-test

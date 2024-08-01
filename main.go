@@ -58,7 +58,6 @@ func init() {
 }
 
 func main() {
-	setupLog.Info("starting set up")
 	initLogger, _ := getLoggerWithLogLevel("info", "")
 
 	ctrlConfig, err := loadControllerConfig()
@@ -129,7 +128,6 @@ func main() {
 	}
 
 	go metrics.ServeMetrics()
-
 	go rpc.RunRPCHandler(policyEndpointController, clientset)
 
 	setupLog.Info("starting manager")

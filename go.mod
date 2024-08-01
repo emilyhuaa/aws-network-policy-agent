@@ -5,7 +5,6 @@ go 1.22.4
 require (
 	github.com/aws/amazon-vpc-cni-k8s v1.18.1
 	github.com/aws/aws-ebpf-sdk-go v1.0.9
-	github.com/aws/aws-network-policy-agent v1.1.2
 	github.com/aws/aws-sdk-go v1.50.30
 	github.com/emilyhuaa/policyLogsEnhancement v1.7.3
 	github.com/go-logr/logr v1.4.2

@@ -172,17 +172,14 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 				}
 
 				srcIP := utils.ConvByteToIPv6(rb.SourceIP).String()
-				srcN, srcNS := utils.GetPodMetadata(srcIP)
 				srcPort := int(rb.SourcePort)
-
 				destIP := utils.ConvByteToIPv6(rb.DestIP).String()
-				destN, destNS := utils.GetPodMetadata(destIP)
 				destPort := int(rb.DestPort)
 
 				protocol := utils.GetProtocol(int(rb.Protocol))
 				verdict := getVerdict(int(rb.Verdict))
 
-				utils.LogFlowInfo(log, &message, nodeName, srcIP, srcN, srcNS, srcPort, destIP, destN, destNS, destPort, protocol, verdict)
+				logPolicyEventsWithK8sMetadata(log, &message, nodeName, srcIP, srcPort, destIP, destPort, protocol, verdict)
 
 			} else {
 				var rb ringBufferDataV4_t
@@ -192,17 +189,14 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 					continue
 				}
 				srcIP := utils.ConvByteArrayToIP(rb.SourceIP)
-				srcN, srcNS := utils.GetPodMetadata(srcIP)
 				srcPort := int(rb.SourcePort)
-
 				destIP := utils.ConvByteArrayToIP(rb.DestIP)
-				destN, destNS := utils.GetPodMetadata(destIP)
 				destPort := int(rb.DestPort)
 
 				protocol := utils.GetProtocol(int(rb.Protocol))
 				verdict := getVerdict(int(rb.Verdict))
 
-				utils.LogFlowInfo(log, &message, nodeName, srcIP, srcN, srcNS, srcPort, destIP, destN, destNS, destPort, protocol, verdict)
+				logPolicyEventsWithK8sMetadata(log, &message, nodeName, srcIP, srcPort, destIP, destPort, protocol, verdict)
 			}
 
 			if enableCloudWatchLogs {
@@ -213,6 +207,18 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 			}
 		}
 	}(ringbufferdata)
+}
+
+func logPolicyEventsWithK8sMetadata(log logr.Logger, message *string, nodeName, srcIP string, srcPort int, destIP string, destPort int, protocol, verdict string) {
+	srcName, srcNS, err := utils.GetPodMetadata(srcIP)
+	if err != nil {
+		log.Info("Failed to get name and namespace metadata for source IP: %s", srcIP)
+	}
+	destName, destNS, err := utils.GetPodMetadata(destIP)
+	if err != nil {
+		log.Info("Failed to get name and namespace metadata for dest IP: %s", destIP)
+	}
+	utils.LogFlowInfo(log, message, nodeName, srcIP, srcName, srcNS, srcPort, destIP, destName, destNS, destPort, protocol, verdict)
 }
 
 func ensureLogGroupExists(name string) error {

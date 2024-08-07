@@ -1,5 +1,5 @@
 # Build the manager binary
-ARG golang_image=golang:1.22.4
+ARG golang_image
 
 FROM $golang_image as builder
 
@@ -10,6 +10,7 @@ ARG TARGETARCH
 ENV GOPROXY=direct
 
 WORKDIR /workspace
+
 COPY go.mod go.sum ./
 # cache deps before building and copying source so that we don't need to re-download as much
 # and so that source changes don't invalidate our downloaded layer

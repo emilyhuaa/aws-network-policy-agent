@@ -2,8 +2,6 @@ github.com/aws/amazon-vpc-cni-k8s v1.18.1 h1:u/OeBgnUUX6f3PCEOpA4dbG0+iZ71CnY6tE
 github.com/aws/amazon-vpc-cni-k8s v1.18.1/go.mod h1:m/J5GsxF0Th2iQTOE3ww4W9LFvwdC0tGyA9dIL4h6iQ=
 github.com/aws/aws-ebpf-sdk-go v1.0.9 h1:FvkyeRUKNvbUFgzh+Ia7XbBb5U86dHW6dCrljt76Fao=
 github.com/aws/aws-ebpf-sdk-go v1.0.9/go.mod h1:SBy1vl1WXMingLbqPZfHd1VXTqB9cD473JwUfoEM+Qs=
-github.com/aws/aws-network-policy-agent v1.1.2 h1:XSY42fw3OMbsb79MXD2FjGZH2JRUdDDKXLqgeHxhXPk=
-github.com/aws/aws-network-policy-agent v1.1.2/go.mod h1:KW3WMEvu5yxB8G1NBNIUSkKKuB3N0K3zO2o7teeJQBQ=
 github.com/aws/aws-sdk-go v1.50.30 h1:2OelKH1eayeaH7OuL1Y9Ombfw4HK+/k0fEnJNWjyLts=
 github.com/aws/aws-sdk-go v1.50.30/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
@@ -16,8 +14,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/emicklei/go-restful/v3 v3.12.1 h1:PJMDIM/ak7btuL8Ex0iYET9hxM3CI2sjZtzpL63nKAU=
 github.com/emicklei/go-restful/v3 v3.12.1/go.mod h1:6n3XBCmQQb25CM2LCACGz8ukIrRry+4bhvbpWn3mrbc=
-github.com/emilyhuaa/policyLogsEnhancement v1.7.3 h1:B2Glx96a9mydOWWpnXMlR2kTs+8KIKIjslh7Btj6hOs=
-github.com/emilyhuaa/policyLogsEnhancement v1.7.3/go.mod h1:mzMor7yZd8PyvADoNN3rbeCPxX8GXvh7wDDDQwojtF4=
+github.com/emilyhuaa/policyLogsEnhancement v1.0.2 h1:IvL2FW1FCYGYMOt217Zth3ekh+WrydvS2oLQZrK4ZiM=
+github.com/emilyhuaa/policyLogsEnhancement v1.0.2/go.mod h1:w4zq0fynaMP8Y5hbKbgxOXJU0/mgP7xdVMl5phce5f0=
 github.com/evanphx/json-patch v5.7.0+incompatible h1:vgGkfT/9f8zE6tvSCe74nfpAVDQ2tG6yudJd8LBksgI=
 github.com/evanphx/json-patch v5.7.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch/v5 v5.9.0 h1:kcBlZQbplgElYIlo/n1hJbls2z/1awpXxpRi0/FOJfg=

@@ -50,22 +50,6 @@ type Metadata struct {
 	Namespace string
 }
 
-// get Service IP using DNS lookup
-// func GetServiceIP(serviceDNSName string, port int) (string, error) {
-// 	ips, err := net.LookupIP(serviceDNSName)
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	for _, ip := range ips {
-// 		if ipv4 := ip.To4(); ipv4 != nil {
-// 			return fmt.Sprintf("%s:%d", ipv4.String(), port), nil
-// 		} else if ipv6 := ip.To16(); ipv6 != nil {
-// 			return fmt.Sprintf("[%s]:%d", ipv6.String(), port), nil
-// 		}
-// 	}
-// 	return "", fmt.Errorf("no valid IP address found for service %s", serviceDNSName)
-// }
-
 func GetServiceIP(client *kubernetes.Clientset, serviceName, serviceNamespace string, log logr.Logger) (string, error) {
 	service, err := client.CoreV1().Services(serviceNamespace).Get(context.Background(), serviceName, metav1.GetOptions{})
 	if err != nil {
@@ -89,19 +73,18 @@ func UpdateLocalCache(newCache map[string]Metadata) {
 	}
 }
 
-func GetPodMetadata(ip string) (string, string) {
+func GetPodMetadata(ip string) (string, string, error) {
 	LocalCacheMutex.Lock()
 	defer LocalCacheMutex.Unlock()
 	if metadata, exists := LocalCache[ip]; exists {
-		return metadata.Name, metadata.Namespace
+		return metadata.Name, metadata.Namespace, nil
 	}
-	return "", ""
+	return "", "", fmt.Errorf("pod metadata not found for IP %s in current cache", ip)
 }
 
 func LogFlowInfo(log logr.Logger, message *string, nodeName, srcIP, srcN, srcNS string, srcPort int, destIP, destN, destNS string, destPort int, protocol, verdict string) {
 	switch {
 	case srcN == "" && srcNS == "": // if no pod metadata for source IP
-		log.Info("Failed to get pod metadata for source IP", "ip: ", srcIP)
 		log.Info("Flow Info:  ", "Src IP", srcIP, "Src Port", srcPort,
 			"Dest IP", destIP, "Dest Name", destN, "Dest Namespace", destNS, "Dest Port", destPort, "Proto", protocol, "Verdict", verdict)
 		*message = "Node: " + nodeName + ";" + "SHOSTIP: " + srcIP + ";" + "SPORT: " + strconv.Itoa(srcPort) + ";" +

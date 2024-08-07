@@ -154,8 +154,7 @@ func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler, clie
 		os.Exit(1)
 	}
 
-	cacheAddr := serviceIP + ":50051"
-	cacheClient, err := newCacheClient(cacheAddr)
+	cacheClient, err := newCacheClient(serviceIP + ":50051")
 	if err != nil {
 		rpcLog.Error(err, "Failed to connect to metadata cache service")
 		return errors.Wrap(err, "network policy agent: failed to connect to metadata cache service")

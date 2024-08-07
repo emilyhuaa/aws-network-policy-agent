@@ -212,11 +212,11 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 func logPolicyEventsWithK8sMetadata(log logr.Logger, message *string, nodeName, srcIP string, srcPort int, destIP string, destPort int, protocol, verdict string) {
 	srcName, srcNS, err := utils.GetPodMetadata(srcIP)
 	if err != nil {
-		log.Info("Failed to get name and namespace metadata for source IP: %s", srcIP)
+		log.Info("Failed to get source name and namespace metadata", "source IP:", srcIP)
 	}
 	destName, destNS, err := utils.GetPodMetadata(destIP)
 	if err != nil {
-		log.Info("Failed to get name and namespace metadata for dest IP: %s", destIP)
+		log.Info("Failed to getm destination name and namespace metadata for", "dest IP:", destIP)
 	}
 	utils.LogFlowInfo(log, message, nodeName, srcIP, srcName, srcNS, srcPort, destIP, destName, destNS, destPort, protocol, verdict)
 }

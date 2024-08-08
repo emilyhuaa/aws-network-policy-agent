@@ -216,7 +216,7 @@ func logPolicyEventsWithK8sMetadata(log logr.Logger, message *string, nodeName, 
 	}
 	destName, destNS, err := utils.GetPodMetadata(destIP)
 	if err != nil {
-		log.Info("Failed to getm destination name and namespace metadata for", "dest IP:", destIP)
+		log.Info("Failed to get destination name and namespace metadata for", "dest IP:", destIP)
 	}
 	utils.LogFlowInfo(log, message, nodeName, srcIP, srcName, srcNS, srcPort, destIP, destName, destNS, destPort, protocol, verdict)
 }

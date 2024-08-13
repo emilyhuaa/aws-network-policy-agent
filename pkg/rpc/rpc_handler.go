@@ -16,7 +16,6 @@ package rpc
 import (
 	"context"
 	"net"
-	"os"
 	"time"
 
 	"github.com/aws/aws-network-policy-agent/controllers"
@@ -128,8 +127,14 @@ func (s *server) syncLocalCache() {
 		for _, ipMetadata := range res.Data {
 			newCache[ipMetadata.Ip] = utils.Metadata{Name: ipMetadata.Metadata.Name, Namespace: ipMetadata.Metadata.Namespace}
 		}
-		utils.UpdateLocalCache(newCache)
-		s.log.Info("Successfully synced local cache with metadata cache", "local cache", utils.LocalCache)
+		if len(newCache) == 0 {
+			s.log.Info("Metadata cache is empty, skipping sync", "cache", newCache)
+			time.Sleep(30 * time.Second)
+			continue
+		} else {
+			utils.UpdateLocalCache(newCache)
+			s.log.Info("Successfully synced local cache with metadata cache", "local cache", utils.LocalCache)
+		}
 
 		time.Sleep(30 * time.Second)
 	}
@@ -147,28 +152,40 @@ func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler, clie
 	}
 	grpcServer := grpc.NewServer()
 
-	// Connect to metadata cache service
-	serviceIP, err := utils.GetServiceIP(clientset, "metadata-cache-service", "default", rpcLog)
-	if err != nil {
-		rpcLog.Error(err, "unable to get metadata-cache-service IP")
-		os.Exit(1)
-	}
-
-	cacheClient, err := newCacheClient(serviceIP + ":50051")
-	if err != nil {
-		rpcLog.Error(err, "Failed to connect to metadata cache service")
-		return errors.Wrap(err, "network policy agent: failed to connect to metadata cache service")
-	}
-
 	s := &server{
 		policyReconciler: policyReconciler,
 		log:              rpcLog,
-		cacheClient:      cacheClient,
 	}
 
-	go s.syncLocalCache()
+	// Connect to metadata cache service
+	serviceIP, err := utils.GetServiceIP(clientset, "aws-k8s-metadata-service", "default", rpcLog)
+	if err != nil {
+		// Log the error and continue without connecting to the metadata cache service
+		rpcLog.Error(err, "unable to get aws-k8s-metadata-service IP")
+		rpcLog.Info("Continuing without connecting to metadata cache service")
 
-	rpc.RegisterNPBackendServer(grpcServer, s)
+		rpc.RegisterNPBackendServer(grpcServer, s)
+	} else {
+		cacheClient, err := newCacheClient(serviceIP + ":50051")
+		if err != nil {
+			// Log the error and continue without connecting to the metadata cache service
+			rpcLog.Error(err, "failed to connect to aws-k8s-metadata-service")
+			rpcLog.Info("Continuing without connecting to metadata cache service")
+
+			rpc.RegisterNPBackendServer(grpcServer, s)
+		} else {
+			s_cache := &server{
+				policyReconciler: policyReconciler,
+				log:              rpcLog,
+				cacheClient:      cacheClient,
+			}
+
+			go s.syncLocalCache()
+
+			rpc.RegisterNPBackendServer(grpcServer, s_cache)
+		}
+	}
+
 	healthServer := health.NewServer()
 	// No need to ever change this to HealthCheckResponse_NOT_SERVING since it's a local service only
 	healthServer.SetServingStatus(grpcHealthServiceName, healthpb.HealthCheckResponse_SERVING)

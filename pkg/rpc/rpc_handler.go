@@ -171,6 +171,7 @@ func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler, clie
 			s.cacheClient = cacheClient
 		}
 	}
+
 	if utils.CacheClientConnected {
 		go s.syncLocalCache()
 	}

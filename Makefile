@@ -1,7 +1,7 @@
 
 # Image URL to use all building/pushing image targets
 IMAGE ?= 992382695827.dkr.ecr.us-west-2.amazonaws.com/emilyhua/aws-network-policy-agent
-VERSION ?= v1.5.5
+VERSION ?= v1.5.7
 IMAGE_NAME = $(IMAGE)$(IMAGE_ARCH_SUFFIX):$(VERSION)
 GOLANG_VERSION ?= $(shell cat .go-version)
 GOLANG_IMAGE ?= public.ecr.aws/eks-distro-build-tooling/golang:$(GOLANG_VERSION)-gcc-al2

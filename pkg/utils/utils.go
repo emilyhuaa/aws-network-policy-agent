@@ -43,6 +43,7 @@ var (
 	ErrMissingFilter                     = "no active filter to detach"
 	LocalCache                           = make(map[string]Metadata)
 	LocalCacheMutex      sync.Mutex
+	CacheClientConnected bool
 )
 
 type Metadata struct {
@@ -50,16 +51,9 @@ type Metadata struct {
 	Namespace string
 }
 
-func IsCacheEmpty() bool {
-	LocalCacheMutex.Lock()
-	defer LocalCacheMutex.Unlock()
-	return len(LocalCache) == 0
-}
-
-func GetServiceIP(client *kubernetes.Clientset, serviceName, serviceNamespace string, log logr.Logger) (string, error) {
+func GetServiceIP(client *kubernetes.Clientset, serviceName, serviceNamespace string) (string, error) {
 	service, err := client.CoreV1().Services(serviceNamespace).Get(context.Background(), serviceName, metav1.GetOptions{})
 	if err != nil {
-		log.Info("clientset: error getting service")
 		return "", err
 	}
 	return service.Spec.ClusterIP, nil

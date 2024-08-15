@@ -166,33 +166,6 @@ func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler, clie
 
 	go s.syncLocalCache()
 
-	// s := &server{
-	// 	policyReconciler: policyReconciler,
-	// 	log:              rpcLog,
-	// 	cacheClient:      nil,
-	// }
-
-	// serviceIP, err := utils.GetServiceIP(clientset, metadataServiceName, metadataServiceNamespace)
-	// if err != nil {
-	// 	// Log the error and continue without connecting to the metadata cache service
-	// 	rpcLog.Info("unable to get aws-k8s-metadata-service IP, continuing without")
-	// 	utils.CacheClientConnected = false
-	// } else {
-	// 	cacheClient, err := newCacheClient(serviceIP + ":50051")
-	// 	if err != nil {
-	// 		// Log the error and continue without connecting to the metadata cache service
-	// 		rpcLog.Info("failed to connect to aws-k8s-metadata-service, continuing without")
-	// 		utils.CacheClientConnected = false
-	// 	} else {
-	// 		rpcLog.Info("Connected to aws-k8s-metadata-service")
-	// 		utils.CacheClientConnected = true
-	// 		s.cacheClient = cacheClient
-	// 	}
-	// }
-	// if utils.CacheClientConnected {
-	// 	go s.syncLocalCache()
-	// }
-
 	rpc.RegisterNPBackendServer(grpcServer, s)
 
 	healthServer := health.NewServer()

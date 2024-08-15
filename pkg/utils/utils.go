@@ -17,6 +17,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -43,6 +44,7 @@ var (
 	ErrMissingFilter                     = "no active filter to detach"
 	LocalCache                           = make(map[string]Metadata)
 	LocalCacheMutex      sync.Mutex
+	CacheClientConnected bool
 )
 
 type Metadata struct {
@@ -50,10 +52,9 @@ type Metadata struct {
 	Namespace string
 }
 
-func GetServiceIP(client *kubernetes.Clientset, serviceName, serviceNamespace string, log logr.Logger) (string, error) {
+func GetServiceIP(client *kubernetes.Clientset, serviceName, serviceNamespace string) (string, error) {
 	service, err := client.CoreV1().Services(serviceNamespace).Get(context.Background(), serviceName, metav1.GetOptions{})
 	if err != nil {
-		log.Info("helper: error getting service")
 		return "", err
 	}
 	return service.Spec.ClusterIP, nil
@@ -73,51 +74,72 @@ func UpdateLocalCache(newCache map[string]Metadata) {
 	}
 }
 
-func GetPodMetadata(ip string) (string, string, error) {
+func GetPodMetadata(ip string) (string, string) {
 	LocalCacheMutex.Lock()
 	defer LocalCacheMutex.Unlock()
 	if metadata, exists := LocalCache[ip]; exists {
-		return metadata.Name, metadata.Namespace, nil
+		return metadata.Name, metadata.Namespace
 	}
-	return "", "", fmt.Errorf("pod metadata not found for IP %s in current cache", ip)
+	return "", ""
 }
 
-func LogFlowInfo(log logr.Logger, message *string, nodeName, srcIP, srcN, srcNS string, srcPort int, destIP, destN, destNS string, destPort int, protocol, verdict string) {
+func GetNetworkPolicy(ctx context.Context, k8sClient client.Client, IP string) (string, string, error) {
+	policyEndpointList := &v1alpha1.PolicyEndpointList{}
+	err := k8sClient.List(ctx, policyEndpointList)
+	if err != nil {
+		return "", "", err
+	}
+
+	for _, policyEndpoint := range policyEndpointList.Items {
+		for _, podIdentifier := range policyEndpoint.Spec.PodSelectorEndpoints {
+			if string(podIdentifier.PodIP) == IP {
+				return policyEndpoint.Spec.PolicyRef.Name, policyEndpoint.Spec.PolicyRef.Namespace, nil
+			}
+		}
+	}
+	return "", "", fmt.Errorf("NP: no matching np found for IP: %s", IP)
+}
+
+func LogFlowInfo(log logr.Logger, message *string, nodeName, srcIP, srcName, srcNS string, srcPort int, destIP, destName, destNS string, destPort int, npName, npNS string, protocol, verdict string) {
 	switch {
-	case srcN == "" && srcNS == "": // if no metadata for source IP
+	case srcName == "" && srcNS == "" && destName == "" && destNS == "": // if no metadata for source and dest IP
+		log.Info("Flow Info: ", "Src IP", srcIP, "Src Port", srcPort, "Dest IP", destIP, "Dest Port", destPort, "Proto", protocol, "Verdict", verdict)
+		*message = "Node: " + nodeName + ";" + "SIP: " + srcIP + ";" + "SPORT: " + strconv.Itoa(srcPort) + ";" + "DIP: " + destIP + ";" + "DPORT: " + strconv.Itoa(destPort) + ";" +
+			"PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
+
+	case srcName == "" && srcNS == "": // if no metadata for source IP
 		log.Info("Flow Info: ", "Src IP", srcIP, "Src Port", srcPort,
-			"Dest IP", destIP, "Dest Name", destN, "Dest Namespace", destNS, "Dest Port", destPort, "Proto", protocol, "Verdict", verdict)
+			"Dest IP", destIP, "Dest Name", destName, "Dest Namespace", destNS, "Dest Port", destPort, "Proto", protocol, "Verdict", verdict)
 		*message = "Node: " + nodeName + ";" + "SHOSTIP: " + srcIP + ";" + "SPORT: " + strconv.Itoa(srcPort) + ";" +
-			"DIP: " + destIP + ";" + "DN" + destN + ";" + "DNS" + destNS + ";" + "DPORT: " + strconv.Itoa(destPort) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
+			"DIP: " + destIP + ";" + "DN" + destName + ";" + "DNS" + destNS + ";" + "DPORT: " + strconv.Itoa(destPort) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
 
-	case srcN == "hostIP" && destN == "hostIP": // if source IP is host IP and dest IP is host IP
-		log.Info("Flow Info: ", "Src Host IP", srcIP, "Src Port", srcPort, "Dest Host IP", destIP, "Dest Port", destPort, "Proto", protocol, "Verdict", verdict)
-		*message = "Node: " + nodeName + ";" + "SHOSTIP: " + srcIP + ";" + "SPORT: " + strconv.Itoa(srcPort) + ";" +
-			"DHOSTIP: " + destIP + ";" + "DPORT: " + strconv.Itoa(destPort) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
-
-	case srcN == "hostIP": // if source IP is host IP only
-		log.Info("Flow Info: ", "Src Host IP", srcIP, "Src Port", srcPort,
-			"Dest IP", destIP, "Dest Name", destN, "Dest Namespace", destNS, "Dest Port", destPort, "Proto", protocol, "Verdict", verdict)
-		*message = "Node: " + nodeName + ";" + "SHOSTIP: " + srcIP + ";" + "SPORT: " + strconv.Itoa(srcPort) + ";" +
-			"DIP: " + destIP + ";" + "DN" + destN + ";" + "DNS" + destNS + ";" + "DPORT: " + strconv.Itoa(destPort) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
-
-	case destN == "hostIP": // if dest IP is host IP only
-		log.Info("Flow Info: ", "Src IP", srcIP, "Src Name", srcN, "Src Namespace", srcN, "Src Port", srcPort,
-			"Dest Host IP", destIP, "Dest Port", destPort, "Proto", protocol, "Verdict", verdict)
-		*message = "Node: " + nodeName + ";" + "SIP: " + srcIP + ";" + "SN" + srcN + ";" + "SNS" + srcN + ";" + "SPORT: " + strconv.Itoa(srcPort) + ";" +
-			"DHOSTIP: " + destIP + ";" + "DPORT: " + strconv.Itoa(destPort) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
-
-	case destN == "" && destNS == "": // if no metadata for dest IP (assumming it is external)
-		log.Info("Flow Info: ", "Src IP", srcIP, "Src Name", srcN, "Src Namespace", srcN, "Src Port", srcPort,
+	case destName == "" && destNS == "": // if no metadata for dest IP (assumming it is external)
+		log.Info("Flow Info: ", "Src IP", srcIP, "Src Name", srcName, "Src Namespace", srcName, "Src Port", srcPort,
 			"Dest Ext Srv IP", destIP, "Dest Port", destPort, "Proto", protocol, "Verdict", verdict)
-		*message = "Node: " + nodeName + ";" + "SIP: " + srcIP + ";" + "SN" + srcN + ";" + "SNS" + srcN + ";" + "SPORT: " + strconv.Itoa(srcPort) + ";" +
+		*message = "Node: " + nodeName + ";" + "SIP: " + srcIP + ";" + "SN" + srcName + ";" + "SNS" + srcName + ";" + "SPORT: " + strconv.Itoa(srcPort) + ";" +
 			"DEXTSRVIP: " + destIP + ";" + "DPORT: " + strconv.Itoa(destPort) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
 
+	case srcName == "hostIP" && destName == "hostIP": // if source IP is host IP and dest IP is host IP
+		log.Info("Flow Info: ", "Src Host IP", srcIP, "Src Port", srcPort, "Dest Host IP", destIP, "Dest Port", destPort, "NP Name", npName, "NP Namespace", npNS, "Proto", protocol, "Verdict", verdict)
+		*message = "Node: " + nodeName + ";" + "SHOSTIP: " + srcIP + ";" + "SPORT: " + strconv.Itoa(srcPort) + ";" +
+			"DHOSTIP: " + destIP + ";" + "DPORT: " + strconv.Itoa(destPort) + ";" + "NPNAME" + npName + ";" + "NPNS" + npNS + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
+
+	case srcName == "hostIP": // if source IP is host IP only
+		log.Info("Flow Info: ", "Src Host IP", srcIP, "Src Port", srcPort,
+			"Dest IP", destIP, "Dest Name", destName, "Dest Namespace", destNS, "Dest Port", destPort, "NP Name", npName, "NP Namespace", npNS, "Proto", protocol, "Verdict", verdict)
+		*message = "Node: " + nodeName + ";" + "SHOSTIP: " + srcIP + ";" + "SPORT: " + strconv.Itoa(srcPort) + ";" +
+			"DIP: " + destIP + ";" + "DN" + destName + ";" + "DNS" + destNS + ";" + "DPORT: " + strconv.Itoa(destPort) + ";" + "NPNAME" + npName + ";" + "NPNS" + npNS + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
+
+	case destName == "hostIP": // if dest IP is host IP only
+		log.Info("Flow Info: ", "Src IP", srcIP, "Src Name", srcName, "Src Namespace", srcName, "Src Port", srcPort,
+			"Dest Host IP", destIP, "Dest Port", destPort, "Proto", "NP Name", npName, "NP Namespace", npNS, protocol, "Verdict", verdict)
+		*message = "Node: " + nodeName + ";" + "SIP: " + srcIP + ";" + "SN" + srcName + ";" + "SNS" + srcName + ";" + "SPORT: " + strconv.Itoa(srcPort) + ";" +
+			"DHOSTIP: " + destIP + ";" + "DPORT: " + strconv.Itoa(destPort) + ";" + "NPNAME" + npName + ";" + "NPNS" + npNS + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
 	default:
-		log.Info("Flow Info: ", "Src IP", srcIP, "Src Name", srcN, "Src Namespace", srcN, "Src Port", srcPort,
-			"Dest IP", destIP, "Dest Name", destN, "Dest Namespace", destNS, "Dest Port", destPort, "Proto", protocol, "Verdict", verdict)
-		*message = "Node: " + nodeName + ";" + "SIP: " + srcIP + ";" + "SN" + srcN + ";" + "SNS" + srcN + ";" + "SPORT: " + strconv.Itoa(srcPort) + ";" +
-			"DIP: " + destIP + ";" + "DN" + destN + ";" + "DNS" + destNS + ";" + "DPORT: " + strconv.Itoa(destPort) + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
+		log.Info("Flow Info: ", "Src IP", srcIP, "Src Name", srcName, "Src Namespace", srcName, "Src Port", srcPort,
+			"Dest IP", destIP, "Dest Name", destName, "Dest Namespace", destNS, "Dest Port", destPort, "NP Name", npName, "NP Namespace", npNS, "Proto", protocol, "Verdict", verdict)
+		*message = "Node: " + nodeName + ";" + "SIP: " + srcIP + ";" + "SN" + srcName + ";" + "SNS" + srcName + ";" + "SPORT: " + strconv.Itoa(srcPort) + ";" +
+			"DIP: " + destIP + ";" + "DN" + destName + ";" + "DNS" + destNS + ";" + "DPORT: " + strconv.Itoa(destPort) + ";" + "NPNAME" + npName + ";" + "NPNS" + npNS + ";" + "PROTOCOL: " + protocol + ";" + "PolicyVerdict: " + verdict
 	}
 }
 

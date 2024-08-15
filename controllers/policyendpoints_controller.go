@@ -88,7 +88,7 @@ func NewPolicyEndpointsReconciler(k8sClient client.Client, log logr.Logger,
 	r.log.Info("ConntrackTTL", "cleanupPeriod", conntrackTTL)
 	var err error
 	if enableNetworkPolicy {
-		r.ebpfClient, err = ebpf.NewBpfClient(&r.policyEndpointeBPFContext, r.nodeIP,
+		r.ebpfClient, err = ebpf.NewBpfClient(r.k8sClient, &r.policyEndpointeBPFContext, r.nodeIP,
 			enablePolicyEventLogs, enableCloudWatchLogs, enableIPv6, conntrackTTL, conntrackTableSize)
 
 		// Start prometheus

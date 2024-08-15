@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -108,7 +109,7 @@ type EbpfFirewallRules struct {
 	L4Info []v1alpha1.Port
 }
 
-func NewBpfClient(policyEndpointeBPFContext *sync.Map, nodeIP string, enablePolicyEventLogs, enableCloudWatchLogs bool,
+func NewBpfClient(k8sClient client.Client, policyEndpointeBPFContext *sync.Map, nodeIP string, enablePolicyEventLogs, enableCloudWatchLogs bool,
 	enableIPv6 bool, conntrackTTL int, conntrackTableSize int) (*bpfClient, error) {
 	var conntrackMap goebpfmaps.BpfMap
 
@@ -224,7 +225,7 @@ func NewBpfClient(policyEndpointeBPFContext *sync.Map, nodeIP string, enablePoli
 	ebpfClient.logger.Info("Initialized Conntrack client")
 
 	if enablePolicyEventLogs {
-		err = events.ConfigurePolicyEventsLogging(ebpfClient.logger, enableCloudWatchLogs, eventBufferFD, enableIPv6)
+		err = events.ConfigurePolicyEventsLogging(k8sClient, ebpfClient.logger, enableCloudWatchLogs, eventBufferFD, enableIPv6)
 		if err != nil {
 			ebpfClient.logger.Error(err, "unable to initialize event buffer for Policy events, exiting..")
 			sdkAPIErr.WithLabelValues("ConfigurePolicyEventsLogging").Inc()

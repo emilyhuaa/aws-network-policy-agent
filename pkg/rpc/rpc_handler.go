@@ -137,7 +137,7 @@ func (s *server) syncLocalCache() {
 }
 
 // RunRPCHandler handles request from gRPC
-func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler, clientset *kubernetes.Clientset) error {
+func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler, client *kubernetes.Clientset) error {
 	rpcLog := ctrl.Log.WithName("rpc-handler")
 
 	rpcLog.Info("Serving RPC Handler", "Address", npgRPCaddress)
@@ -154,9 +154,12 @@ func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler, clie
 		cacheClient:      nil,
 	}
 
-	serviceIP, err := utils.GetServiceIP(clientset, metadataServiceName, metadataServiceNamespace)
+	serviceIP, err := utils.GetServiceIP(client, metadataServiceName, metadataServiceNamespace)
+	rpcLog.Info("aws-k8s-metadata-service IP", "IP", serviceIP)
+
 	if err != nil {
 		// Log the error and continue without connecting to the metadata cache service
+		rpcLog.Error(err, "unable to get aws-k8s-metadata-service IP")
 		rpcLog.Info("unable to get aws-k8s-metadata-service IP, continuing without")
 		utils.CacheClientConnected = false
 	} else {

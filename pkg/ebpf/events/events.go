@@ -2,6 +2,7 @@ package events
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/aws/aws-network-policy-agent/pkg/aws"
 	"github.com/aws/aws-network-policy-agent/pkg/aws/services"
 	"github.com/aws/aws-network-policy-agent/pkg/utils"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	goebpfevents "github.com/aws/aws-ebpf-sdk-go/pkg/events"
 	awssdk "github.com/aws/aws-sdk-go/aws"
@@ -49,7 +51,7 @@ type ringBufferDataV6_t struct {
 	Verdict    uint32
 }
 
-func ConfigurePolicyEventsLogging(logger logr.Logger, enableCloudWatchLogs bool, mapFD int, enableIPv6 bool) error {
+func ConfigurePolicyEventsLogging(k8sClient client.Client, logger logr.Logger, enableCloudWatchLogs bool, mapFD int, enableIPv6 bool) error {
 	// Enable logging and setup ring buffer
 	if mapFD <= 0 {
 		logger.Info("MapFD is invalid")
@@ -73,7 +75,7 @@ func ConfigurePolicyEventsLogging(logger logr.Logger, enableCloudWatchLogs bool,
 			}
 		}
 		logger.Info("Configure Event loop ... ")
-		capturePolicyEvents(eventChanList[mapFD], logger, enableCloudWatchLogs, enableIPv6)
+		capturePolicyEvents(k8sClient, eventChanList[mapFD], logger, enableCloudWatchLogs, enableIPv6)
 	}
 	return nil
 }
@@ -156,7 +158,7 @@ func publishDataToCloudwatch(logQueue []*cloudwatchlogs.InputLogEvent, message s
 	return true
 }
 
-func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCloudWatchLogs bool, enableIPv6 bool) {
+func capturePolicyEvents(k8sClient client.Client, ringbufferdata <-chan []byte, log logr.Logger, enableCloudWatchLogs bool, enableIPv6 bool) {
 	nodeName := os.Getenv("MY_NODE_NAME")
 	// Read from ringbuffer channel, perf buffer support is not there and 5.10 kernel is needed.
 	go func(ringbufferdata <-chan []byte) {
@@ -186,8 +188,12 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 				} else {
 					srcName, srcNS := utils.GetPodMetadata(srcIP)
 					destName, destNS := utils.GetPodMetadata(destIP)
+					npName, npNS, err := utils.GetNetworkPolicy(context.Background(), k8sClient, srcIP)
+					if err != nil {
+						log.Error(err, "service: Failed to get network policy")
+					}
 
-					utils.LogFlowInfo(log, &message, nodeName, srcIP, srcName, srcNS, srcPort, destIP, destName, destNS, destPort, protocol, verdict)
+					utils.LogFlowInfo(log, &message, nodeName, srcIP, srcName, srcNS, srcPort, destIP, destName, destNS, destPort, npName, npNS, protocol, verdict)
 				}
 
 			} else {
@@ -212,7 +218,12 @@ func capturePolicyEvents(ringbufferdata <-chan []byte, log logr.Logger, enableCl
 					srcName, srcNS := utils.GetPodMetadata(srcIP)
 					destName, destNS := utils.GetPodMetadata(destIP)
 
-					utils.LogFlowInfo(log, &message, nodeName, srcIP, srcName, srcNS, srcPort, destIP, destName, destNS, destPort, protocol, verdict)
+					npName, npNS, err := utils.GetNetworkPolicy(context.Background(), k8sClient, srcIP)
+					if err != nil {
+						log.Error(err, "service: Failed to get network policy")
+					}
+
+					utils.LogFlowInfo(log, &message, nodeName, srcIP, srcName, srcNS, srcPort, destIP, destName, destNS, destPort, npName, npNS, protocol, verdict)
 				}
 			}
 

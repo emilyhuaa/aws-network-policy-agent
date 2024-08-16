@@ -76,7 +76,7 @@ func prometheusRegister() {
 func NewPolicyEndpointsReconciler(k8sClient client.Client, log logr.Logger,
 	enablePolicyEventLogs, enableCloudWatchLogs bool, enableIPv6 bool, enableNetworkPolicy bool, conntrackTTL int, conntrackTableSize int) (*PolicyEndpointsReconciler, error) {
 	r := &PolicyEndpointsReconciler{
-		k8sClient: k8sClient,
+		K8sClient: k8sClient,
 		log:       log,
 	}
 
@@ -99,7 +99,7 @@ func NewPolicyEndpointsReconciler(k8sClient client.Client, log logr.Logger,
 
 // PolicyEndpointsReconciler reconciles a PolicyEndpoints object
 type PolicyEndpointsReconciler struct {
-	k8sClient client.Client
+	K8sClient client.Client
 	scheme    *runtime.Scheme
 	//Primary IP of EC2 instance
 	nodeIP string
@@ -134,7 +134,7 @@ func (r *PolicyEndpointsReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 func (r *PolicyEndpointsReconciler) reconcile(ctx context.Context, req ctrl.Request) error {
 	policyEndpoint := &policyk8sawsv1.PolicyEndpoint{}
-	if err := r.k8sClient.Get(ctx, req.NamespacedName, policyEndpoint); err != nil {
+	if err := r.K8sClient.Get(ctx, req.NamespacedName, policyEndpoint); err != nil {
 		if apierrors.IsNotFound(err) {
 			return r.cleanUpPolicyEndpoint(ctx, req)
 		}
@@ -401,7 +401,7 @@ func (r *PolicyEndpointsReconciler) deriveIngressAndEgressFirewallRules(ctx cont
 				}
 			}
 
-			if err := r.k8sClient.Get(ctx, peNamespacedName, currentPE); err != nil {
+			if err := r.K8sClient.Get(ctx, peNamespacedName, currentPE); err != nil {
 				if apierrors.IsNotFound(err) {
 					continue
 				}
@@ -505,7 +505,7 @@ func (r *PolicyEndpointsReconciler) deriveTargetPodsForParentNP(ctx context.Cont
 			Name:      policyEndpointResource,
 			Namespace: resourceNamespace,
 		}
-		if err := r.k8sClient.Get(ctx, peNamespacedName, currentPE); err != nil {
+		if err := r.K8sClient.Get(ctx, peNamespacedName, currentPE); err != nil {
 			if apierrors.IsNotFound(err) {
 				continue
 			}
@@ -689,7 +689,7 @@ func (r *PolicyEndpointsReconciler) derivePolicyEndpointsOfParentNP(ctx context.
 	var parentPolicyEndpointList []string
 
 	policyEndpointList := &policyk8sawsv1.PolicyEndpointList{}
-	if err := r.k8sClient.List(ctx, policyEndpointList, &client.ListOptions{
+	if err := r.K8sClient.List(ctx, policyEndpointList, &client.ListOptions{
 		Namespace: resourceNamespace,
 	}); err != nil {
 		r.log.Info("Unable to list PolicyEndpoints", "err", err)

@@ -20,8 +20,8 @@ import (
 
 	"github.com/aws/aws-network-policy-agent/controllers"
 	"github.com/aws/aws-network-policy-agent/pkg/utils"
-
 	pb "github.com/emilyhuaa/policyLogsEnhancement/pkg/rpc"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	rpc "github.com/aws/amazon-vpc-cni-k8s/rpc"
 	"github.com/go-logr/logr"
@@ -31,8 +31,8 @@ import (
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -136,8 +136,20 @@ func (s *server) syncLocalCache() {
 	}
 }
 
+func getServiceIP(client client.Client, serviceName, serviceNamespace string, log logr.Logger) (string, error) {
+	log.Info("service: getting service IP")
+	service := &corev1.Service{}
+	err := client.Get(context.TODO(), types.NamespacedName{Name: serviceName, Namespace: serviceNamespace}, service)
+	if err != nil {
+		log.Error(err, "service: unable to get service")
+		return "", err
+	}
+	log.Info("service: got service IP", "ip", service.Spec.ClusterIP)
+	return service.Spec.ClusterIP, nil
+}
+
 // RunRPCHandler handles request from gRPC
-func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler, clientset *kubernetes.Clientset) error {
+func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler) error {
 	rpcLog := ctrl.Log.WithName("rpc-handler")
 
 	rpcLog.Info("Serving RPC Handler", "Address", npgRPCaddress)
@@ -149,14 +161,19 @@ func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler, clie
 	grpcServer := grpc.NewServer()
 
 	// Connect to metadata cache service
-	serviceIP, _ := utils.GetServiceIP(clientset, metadataServiceName, metadataServiceNamespace)
+	serviceIP, err := getServiceIP(policyReconciler.K8sClient, metadataServiceName, metadataServiceNamespace, rpcLog)
+	if err != nil {
+		rpcLog.Error(err, "service: can't get service IP")
+	}
+	rpcLog.Info("service: got service IP", "ip", serviceIP)
 	cacheClient, err := newCacheClient(serviceIP + ":50051")
 	if err != nil {
-		rpcLog.Error(err, "unable to connect to aws-k8s-metadata service, continuing without")
+		rpcLog.Error(err, "service: unable to connect to aws-k8s-metadata service, continuing without")
 		utils.CacheClientConnected = false
 	} else {
 		utils.CacheClientConnected = true
 	}
+	rpcLog.Info("service: done with cache client initialization")
 
 	s := &server{
 		policyReconciler: policyReconciler,

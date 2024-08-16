@@ -29,7 +29,7 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
-	"k8s.io/client-go/kubernetes"
+
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	policyk8sawsv1 "github.com/aws/aws-network-policy-agent/api/v1alpha1"
@@ -39,7 +39,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	//+kubebuilder:scaffold:imports
@@ -85,18 +84,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	k8sconfig, err := rest.InClusterConfig()
-	if err != nil {
-		setupLog.Error(err, "Failed to get in-cluster config")
-		os.Exit(1)
-	}
-
-	clientset, err := kubernetes.NewForConfig(k8sconfig)
-	if err != nil {
-		setupLog.Error(err, "Failed to create Kubernetes clientset")
-		os.Exit(1)
-	}
-
 	err = ctrlConfig.ValidControllerFlags()
 	if err != nil {
 		setupLog.Error(err, "Controller flags validation failed")
@@ -127,14 +114,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	go metrics.ServeMetrics()
-	go rpc.RunRPCHandler(policyEndpointController, clientset)
+	go func() {
+		setupLog.Info("starting manager")
+		if err := mgr.Start(ctx); err != nil {
+			setupLog.Error(err, "problem running manager")
+			os.Exit(1)
+		}
+	}()
 
-	setupLog.Info("starting manager")
-	if err := mgr.Start(ctx); err != nil {
-		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
-	}
+	setupLog.Info("service: starting RPC handler")
+	go rpc.RunRPCHandler(policyEndpointController)
+	setupLog.Info("service: finished RPC handler")
+
+	setupLog.Info("service: starting metrics service")
+	go metrics.ServeMetrics()
+
+	<-ctx.Done()
 }
 
 // loadControllerConfig loads the controller configuration

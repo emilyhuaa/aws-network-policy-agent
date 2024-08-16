@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"context"
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/hex"
@@ -15,8 +14,6 @@ import (
 	"github.com/aws/aws-network-policy-agent/api/v1alpha1"
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 var (
@@ -49,14 +46,6 @@ var (
 type Metadata struct {
 	Name      string
 	Namespace string
-}
-
-func GetServiceIP(client *kubernetes.Clientset, serviceName, serviceNamespace string) (string, error) {
-	service, err := client.CoreV1().Services(serviceNamespace).Get(context.Background(), serviceName, metav1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-	return service.Spec.ClusterIP, nil
 }
 
 func UpdateLocalCache(newCache map[string]Metadata) {

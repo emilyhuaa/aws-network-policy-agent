@@ -22,7 +22,6 @@ import (
 	"github.com/aws/aws-network-policy-agent/pkg/rpc"
 
 	"github.com/aws/aws-network-policy-agent/pkg/logger"
-
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/spf13/pflag"
@@ -123,7 +122,7 @@ func main() {
 	}()
 
 	setupLog.Info("service: starting RPC handler")
-	go rpc.RunRPCHandler(policyEndpointController)
+	go rpc.RunRPCHandler(policyEndpointController, ctx)
 	setupLog.Info("service: finished RPC handler")
 
 	setupLog.Info("service: starting metrics service")

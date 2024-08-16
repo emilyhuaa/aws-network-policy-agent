@@ -136,10 +136,10 @@ func (s *server) syncLocalCache() {
 	}
 }
 
-func getServiceIP(client client.Client, serviceName, serviceNamespace string, log logr.Logger) (string, error) {
+func getServiceIP(client client.Client, ctx context.Context, serviceName, serviceNamespace string, log logr.Logger) (string, error) {
 	log.Info("service: getting service IP")
 	service := &corev1.Service{}
-	err := client.Get(context.TODO(), types.NamespacedName{Name: serviceName, Namespace: serviceNamespace}, service)
+	err := client.Get(ctx, types.NamespacedName{Name: serviceName, Namespace: serviceNamespace}, service)
 	if err != nil {
 		log.Error(err, "service: unable to get service")
 		return "", err
@@ -149,7 +149,7 @@ func getServiceIP(client client.Client, serviceName, serviceNamespace string, lo
 }
 
 // RunRPCHandler handles request from gRPC
-func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler) error {
+func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler, ctx context.Context) error {
 	rpcLog := ctrl.Log.WithName("rpc-handler")
 
 	rpcLog.Info("Serving RPC Handler", "Address", npgRPCaddress)
@@ -161,7 +161,7 @@ func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler) erro
 	grpcServer := grpc.NewServer()
 
 	// Connect to metadata cache service
-	serviceIP, err := getServiceIP(policyReconciler.K8sClient, metadataServiceName, metadataServiceNamespace, rpcLog)
+	serviceIP, err := getServiceIP(policyReconciler.K8sClient, ctx, metadataServiceName, metadataServiceNamespace, rpcLog)
 	if err != nil {
 		rpcLog.Error(err, "service: can't get service IP")
 	}

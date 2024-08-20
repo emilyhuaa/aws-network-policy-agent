@@ -15,6 +15,7 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"time"
 
@@ -144,6 +145,7 @@ func getServiceIP(client client.Client, ctx context.Context, serviceName, servic
 		log.Error(err, "service: unable to get service")
 		return "", err
 	}
+	log.V(1).Info("service: got service", "service", fmt.Sprintf("%+v", service))
 	log.Info("service: got service IP", "ip", service.Spec.ClusterIP)
 	return service.Spec.ClusterIP, nil
 }
@@ -164,6 +166,7 @@ func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler, ctx 
 	serviceIP, err := getServiceIP(policyReconciler.K8sClient, ctx, metadataServiceName, metadataServiceNamespace, rpcLog)
 	if err != nil {
 		rpcLog.Error(err, "service: can't get service IP")
+		return errors.Wrap(err, "network policy agent: can't get service IP")
 	}
 	rpcLog.Info("service: got service IP", "ip", serviceIP)
 	cacheClient, err := newCacheClient(serviceIP + ":50051")

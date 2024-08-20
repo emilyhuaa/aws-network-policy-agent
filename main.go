@@ -17,7 +17,9 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"os"
+	"time"
 
 	"github.com/aws/aws-network-policy-agent/pkg/rpc"
 
@@ -89,7 +91,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	ctx := ctrl.SetupSignalHandler()
+	ctx, cancel := context.WithTimeout(ctrl.SetupSignalHandler(), time.Minute*2)
+	defer cancel()
 	policyEndpointController, err := controllers.NewPolicyEndpointsReconciler(mgr.GetClient(),
 		ctrl.Log.WithName("controllers").WithName("policyEndpoints"), ctrlConfig.EnablePolicyEventLogs, ctrlConfig.EnableCloudWatchLogs,
 		ctrlConfig.EnableIPv6, ctrlConfig.EnableNetworkPolicy, ctrlConfig.ConntrackCacheCleanupPeriod, ctrlConfig.ConntrackCacheTableSize)
@@ -113,13 +116,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	setupLog.Info("starting manager")
 	go func() {
-		setupLog.Info("starting manager")
 		if err := mgr.Start(ctx); err != nil {
 			setupLog.Error(err, "problem running manager")
 			os.Exit(1)
 		}
 	}()
+
+	setupLog.Info("service: waiting for cache to sync")
+	if !mgr.GetCache().WaitForCacheSync(ctx) {
+		setupLog.Error(err, "service: failed to wait sync cache")
+		os.Exit(1)
+	}
 
 	setupLog.Info("service: starting RPC handler")
 	go rpc.RunRPCHandler(policyEndpointController, ctx)

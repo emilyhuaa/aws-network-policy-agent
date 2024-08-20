@@ -520,7 +520,7 @@ func TestDeriveTargetPods(t *testing.T) {
 
 		mockClient := mock_client.NewMockClient(ctrl)
 		policyEndpointReconciler := PolicyEndpointsReconciler{
-			k8sClient: mockClient,
+			K8sClient: mockClient,
 			log:       logr.New(&log.NullLogSink{}),
 			nodeIP:    tt.nodeIP,
 		}
@@ -583,7 +583,7 @@ func TestAddCatchAllEntry(t *testing.T) {
 
 		mockClient := mock_client.NewMockClient(ctrl)
 		policyEndpointReconciler := PolicyEndpointsReconciler{
-			k8sClient: mockClient,
+			K8sClient: mockClient,
 			log:       logr.New(&log.NullLogSink{}),
 		}
 
@@ -700,7 +700,7 @@ func TestDeriveDefaultPodIsolation(t *testing.T) {
 
 		mockClient := mock_client.NewMockClient(ctrl)
 		policyEndpointReconciler := PolicyEndpointsReconciler{
-			k8sClient: mockClient,
+			K8sClient: mockClient,
 			log:       logr.New(&log.NullLogSink{}),
 		}
 

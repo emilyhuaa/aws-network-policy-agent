@@ -15,7 +15,6 @@ package rpc
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"time"
 
@@ -139,13 +138,17 @@ func (s *server) syncLocalCache() {
 
 func getServiceIP(client client.Client, ctx context.Context, serviceName, serviceNamespace string, log logr.Logger) (string, error) {
 	log.Info("service: getting service IP")
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+
 	service := &corev1.Service{}
+	log.Info("service: initial", "service", service)
 	err := client.Get(ctx, types.NamespacedName{Name: serviceName, Namespace: serviceNamespace}, service)
 	if err != nil {
 		log.Error(err, "service: unable to get service")
 		return "", err
 	}
-	log.V(1).Info("service: got service", "service", fmt.Sprintf("%+v", service))
+	log.Info("service: got service", "service", service)
 	log.Info("service: got service IP", "ip", service.Spec.ClusterIP)
 	return service.Spec.ClusterIP, nil
 }
@@ -184,7 +187,9 @@ func RunRPCHandler(policyReconciler *controllers.PolicyEndpointsReconciler, ctx 
 		cacheClient:      cacheClient,
 	}
 
-	go s.syncLocalCache()
+	if utils.CacheClientConnected {
+		go s.syncLocalCache()
+	}
 
 	rpc.RegisterNPBackendServer(grpcServer, s)
 

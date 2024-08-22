@@ -17,9 +17,7 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"os"
-	"time"
 
 	"github.com/aws/aws-network-policy-agent/pkg/rpc"
 
@@ -91,8 +89,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	ctx, cancel := context.WithTimeout(ctrl.SetupSignalHandler(), time.Minute*2)
-	defer cancel()
+	ctx := ctrl.SetupSignalHandler()
 	policyEndpointController, err := controllers.NewPolicyEndpointsReconciler(mgr.GetClient(),
 		ctrl.Log.WithName("controllers").WithName("policyEndpoints"), ctrlConfig.EnablePolicyEventLogs, ctrlConfig.EnableCloudWatchLogs,
 		ctrlConfig.EnableIPv6, ctrlConfig.EnableNetworkPolicy, ctrlConfig.ConntrackCacheCleanupPeriod, ctrlConfig.ConntrackCacheTableSize)
